@@ -38,15 +38,19 @@ DEFAULT_INV = [
 def sha(s: str) -> str:
     return hashlib.sha256(s.encode("utf-8")).hexdigest()
 
+EMOTIONS = ["smile", "neutral", "frown", "surprised", "sleepy"]
+
+
 def random_appearance():
-    skins = ["#f1d3b3","#d6a77a","#b07b53","#855739"]
-    hairs = ["#2b2b2b","#5a3a1c","#d7b36d","#7d553a","#c7a27a"]
-    eyes  = ["#2b4c7e","#5c3b8c","#2f6b3c","#1e1e1e"]
+    skins = ["#f1d3b3", "#d6a77a", "#b07b53", "#855739"]
+    hairs = ["#2b2b2b", "#5a3a1c", "#d7b36d", "#7d553a", "#c7a27a"]
+    eyes = ["#2b4c7e", "#5c3b8c", "#2f6b3c", "#1e1e1e"]
     return {
         "skin": random.choice(skins),
         "hair": random.choice(hairs),
         "eyes": random.choice(eyes),
-        "style": "short"
+        "style": "short",
+        "emotion": random.choice(EMOTIONS),
     }
 
 def ensure_user(u: str, gender: str = "other", appearance: dict | None = None):
@@ -54,7 +58,14 @@ def ensure_user(u: str, gender: str = "other", appearance: dict | None = None):
         if gender == "other" and (appearance is None):
             # для неопределившихся — рандом
             appearance = random_appearance()
-        STATE["users"][u] = {"coins": 500, "password": "", "gender": gender, "appearance": appearance or random_appearance()}
+        base_appearance = appearance or random_appearance()
+        base_appearance.setdefault("emotion", random.choice(EMOTIONS))
+        STATE["users"][u] = {
+            "coins": 500,
+            "password": "",
+            "gender": gender,
+            "appearance": base_appearance,
+        }
         STATE["inv"][u] = [dict(x) for x in DEFAULT_INV]
         STATE["positions"][u] = {"x": 520, "y": 340}
         STATE["last_income"][u] = 0
@@ -80,8 +91,14 @@ async def auth_page(request: Request):
 
 @app.post("/api/register")
 async def api_register(
-    username: str = Form(...), password: str = Form(...), gender: str = Form("other"),
-    skin: str = Form(None), hair: str = Form(None), eyes: str = Form(None), style: str = Form("short")
+    username: str = Form(...),
+    password: str = Form(...),
+    gender: str = Form("other"),
+    skin: str = Form(None),
+    hair: str = Form(None),
+    eyes: str = Form(None),
+    style: str = Form("short"),
+    emotion: str = Form("smile"),
 ):
     username = (username or "").strip()
     if not username or len(username) < 3:
@@ -91,7 +108,16 @@ async def api_register(
     if username in STATE["users"] and STATE["users"][username].get("password"):
         return {"ok": False, "error": "Пользователь уже существует"}
 
-    appearance = {"skin": skin or "#f1d3b3", "hair": hair or "#2b2b2b", "eyes": eyes or "#2b4c7e", "style": style or "short"}
+    if emotion not in EMOTIONS:
+        emotion = "smile"
+
+    appearance = {
+        "skin": skin or "#f1d3b3",
+        "hair": hair or "#2b2b2b",
+        "eyes": eyes or "#2b4c7e",
+        "style": style or "short",
+        "emotion": emotion,
+    }
     ensure_user(username, gender, appearance)
     STATE["users"][username]["password"] = sha(password)
     STATE["users"][username]["gender"] = gender
@@ -120,9 +146,24 @@ async def get_appearance(username: str):
     return STATE["users"][username].get("appearance", {})
 
 @app.post("/api/appearance/save")
-async def save_appearance(username: str = Form(...), skin: str = Form(...), hair: str = Form(...), eyes: str = Form(...), style: str = Form(...)):
+async def save_appearance(
+    username: str = Form(...),
+    skin: str = Form(...),
+    hair: str = Form(...),
+    eyes: str = Form(...),
+    style: str = Form(...),
+    emotion: str = Form("smile"),
+):
     ensure_user(username)
-    STATE["users"][username]["appearance"] = {"skin": skin, "hair": hair, "eyes": eyes, "style": style}
+    if emotion not in EMOTIONS:
+        emotion = "smile"
+    STATE["users"][username]["appearance"] = {
+        "skin": skin,
+        "hair": hair,
+        "eyes": eyes,
+        "style": style,
+        "emotion": emotion,
+    }
     # оповестим всех, чтобы обновили визуал
     await broadcast({"type":"appearance","name":username,"appearance":STATE["users"][username]["appearance"]})
     return {"ok": True}

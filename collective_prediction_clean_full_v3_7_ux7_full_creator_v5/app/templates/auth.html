@@ -93,6 +93,14 @@
             <div id="styles-wrap" class="select-inline"></div>
           </div>
 
+          <div class="row">
+            <div class="hint-row">
+              <label class="lbl">Эмоция</label>
+              <span class="small-muted">характер и настроение</span>
+            </div>
+            <div id="emotion-sw" class="emotion-row"></div>
+          </div>
+
           <div class="actions">
             <button id="btn-register" class="primary">Создать аккаунт</button>
           </div>
@@ -132,9 +140,16 @@ function validateUser(name){ return (name||'').trim().length>=3; }
 function validatePass(p){ return (p||'').length>=6; }
 
 // Palettes
-const SKINS=['#f1c7a3','#d39a70','#9c613f'];
-const EYES=['#2b4c7e','#2f6b3c','#1e1e1e'];
-const HAIRS=['#1e1e1e','#6b4f2f','#a37d58'];
+const SKINS=['#f7d7ba','#f1c7a3','#d39a70','#bb8656','#9c613f'];
+const EYES=['#2b4c7e','#5c3b8c','#2f6b3c','#1e1e1e','#6b3f2f'];
+const HAIRS=['#1e1e1e','#3a2a1c','#6b4f2f','#a37d58','#c9a873','#df8e44'];
+const EMOTIONS=[
+  {value:'smile',label:'Улыбка',icon:'🙂'},
+  {value:'neutral',label:'Спокойствие',icon:'😐'},
+  {value:'frown',label:'Серьёзный',icon:'😠'},
+  {value:'surprised',label:'Удивление',icon:'😯'},
+  {value:'sleepy',label:'Сонный',icon:'😴'}
+];
 
 // Hairstyles catalog by gender
 const STYLES = {
@@ -148,15 +163,26 @@ let state = {
   skin: SKINS[1],
   hair: HAIRS[0],
   eyes: EYES[0],
-  style: "short"
+  style: "short",
+  emotion: "smile"
 };
+try{
+  const stored=JSON.parse(localStorage.getItem('cp_appearance')||'{}');
+  if(stored.skin && SKINS.includes(stored.skin)) state.skin=stored.skin;
+  if(stored.hair && HAIRS.includes(stored.hair)) state.hair=stored.hair;
+  if(stored.eyes && EYES.includes(stored.eyes)) state.eyes=stored.eyes;
+  if(stored.style && Object.values(STYLES).some(list=>list.includes(stored.style))) state.style=stored.style;
+  if(stored.emotion && EMOTIONS.some(e=>e.value===stored.emotion)) state.emotion=stored.emotion;
+}catch(e){}
 
 // Build swatches
 function makeSwatches(id, arr, cls){
   const box=document.getElementById(id); box.innerHTML="";
-  arr.forEach((val,i)=>{
+  const current = id==='skin-sw'?state.skin:(id==='eyes-sw'?state.eyes:state.hair);
+  let selectedEl=null;
+  arr.forEach((val)=>{
     const d=document.createElement('div'); d.className='swatch '+(cls||'');
-    d.style.background=val; d.dataset.val=val; d.dataset.selected = (i===0?0:0);
+    d.style.background=val; d.dataset.val=val; d.dataset.selected=0;
     d.addEventListener('click',()=>{
       box.querySelectorAll('.swatch').forEach(s=>s.dataset.selected=0);
       d.dataset.selected=1;
@@ -165,32 +191,69 @@ function makeSwatches(id, arr, cls){
       if(id==='hair-sw') state.hair=val;
       redrawPreview();
     });
+    if(val===current){ selectedEl=d; }
     box.appendChild(d);
   });
-  // select current
-  let first=box.querySelector('.swatch'); if(first){ first.click(); }
+  const target=selectedEl || box.querySelector('.swatch');
+  if(target){
+    target.dataset.selected=1;
+    const val=target.dataset.val;
+    if(id==='skin-sw') state.skin=val;
+    if(id==='eyes-sw') state.eyes=val;
+    if(id==='hair-sw') state.hair=val;
+  }
 }
 function makeStyles(){
   const g=genderValue();
   const list=STYLES[g]||STYLES.other;
   const box=document.getElementById('styles-wrap'); box.innerHTML="";
-  list.forEach((name, i)=>{
+  const preferred = list.includes(state.style)?state.style:list[0];
+  state.style = preferred;
+  list.forEach((name)=>{
     const b=document.createElement('button'); b.type='button'; b.className='badge'; b.textContent=hairLabel(name);
     b.dataset.val=name;
     b.addEventListener('click',()=>{
       box.querySelectorAll('.badge').forEach(x=>x.dataset.selected=0);
       b.dataset.selected=1; state.style=name; redrawPreview();
     });
-    if(i===0) b.dataset.selected=1;
+    if(name===preferred) b.dataset.selected=1;
     box.appendChild(b);
   });
 }
+function makeEmotions(){
+  const box=document.getElementById('emotion-sw'); if(!box) return;
+  box.innerHTML="";
+  const current=state.emotion;
+  EMOTIONS.forEach(em=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='emotion-btn';
+    btn.innerHTML=`<span class="emo-icon">${em.icon}</span><span>${em.label}</span>`;
+    btn.dataset.val=em.value;
+    btn.addEventListener('click',()=>{
+      state.emotion=em.value;
+      box.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
+      btn.dataset.selected=1;
+      redrawPreview();
+    });
+    if(em.value===current) btn.dataset.selected=1;
+    box.appendChild(btn);
+  });
+}
 ['male','female','other'].forEach(v=>{
-  document.querySelector('input[name="gender"][value="'+v+'"]').addEventListener('change',()=>makeStyles());
+  document.querySelector('input[name="gender"][value="'+v+'"]').addEventListener('change',()=>{ makeStyles(); makeEmotions(); redrawPreview(); });
 });
 
 // Preview drawing
 const pv=document.getElementById('preview'), pctx=pv.getContext('2d');
+function drawShadow(ctx, cx, cy){
+  ctx.save();
+  ctx.fillStyle='rgba(12,16,32,0.32)';
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 88, 22, 0, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
 function hairLabel(style){
   const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",mohawk:"Ирокез",
              curly:"Кудри",afro:"Афро",ponytail:"Хвост",pixie:"Пикси",bob:"Каре",long:"Длинные",
@@ -214,22 +277,59 @@ function drawHair(ctx, style, color, cx, top){
   else if(style==="braids"){ for(let i=0;i<4;i++){ ctx.fillRect(cx-36+i*18, top, 12, 56); } }
   else { ctx.fillRect(cx-44, top, 88, 22); }
 }
+function drawExpression(ctx, emotion, cx, cy, eyesColor, scale){
+  ctx.save();
+  const eyeDx = 12*scale;
+  const eyeR = 5*scale;
+  ctx.fillStyle = eyesColor;
+  if(emotion==='surprised'){
+    ctx.beginPath(); ctx.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx.fill();
+  }else if(emotion==='sleepy'){
+    ctx.fillRect(cx-eyeDx-eyeR, cy-1*scale, eyeR*2, 2*scale);
+    ctx.fillRect(cx+eyeDx-eyeR, cy-1*scale, eyeR*2, 2*scale);
+  }else if(emotion==='frown'){
+    ctx.beginPath(); ctx.ellipse(cx-eyeDx, cy, eyeR+2*scale, eyeR-2*scale, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+eyeDx, cy, eyeR+2*scale, eyeR-2*scale, 0, 0, Math.PI*2); ctx.fill();
+  }else{
+    ctx.beginPath(); ctx.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx.fill();
+  }
+  ctx.strokeStyle = '#3b2a1b';
+  ctx.lineWidth = 3*scale;
+  const mouthY = cy + 16*scale;
+  if(emotion==='smile'){
+    ctx.beginPath(); ctx.arc(cx, mouthY, 16*scale, 0, Math.PI); ctx.stroke();
+  }else if(emotion==='frown'){
+    ctx.beginPath(); ctx.arc(cx, mouthY+10*scale, 16*scale, Math.PI, 0); ctx.stroke();
+  }else if(emotion==='surprised'){
+    ctx.beginPath(); ctx.arc(cx, mouthY+2*scale, 8*scale, 0, Math.PI*2); ctx.stroke();
+  }else if(emotion==='sleepy'){
+    ctx.beginPath(); ctx.moveTo(cx-10*scale, mouthY); ctx.lineTo(cx+10*scale, mouthY); ctx.stroke();
+  }else{
+    ctx.beginPath(); ctx.moveTo(cx-12*scale, mouthY); ctx.lineTo(cx+12*scale, mouthY); ctx.stroke();
+  }
+  ctx.restore();
+}
 function redrawPreview(){
   pctx.clearRect(0,0,pv.width,pv.height);
-  const cx=pv.width/2, top=70;
-  // body
-  pctx.fillStyle=state.skin;
-  pctx.beginPath(); pctx.arc(cx, top, 36, 0, Math.PI*2); pctx.fill();
-  pctx.fillRect(cx-26, top+38, 52, 78);
-  // eyes
-  pctx.fillStyle=state.eyes; pctx.beginPath(); pctx.arc(cx-12, top, 5, 0, Math.PI*2); pctx.fill(); pctx.beginPath(); pctx.arc(cx+12, top, 5, 0, Math.PI*2); pctx.fill();
-  // hair
-  drawHair(pctx, state.style, state.hair, cx, top-24);
+  const cx=pv.width/2, top=84;
+  drawShadow(pctx, cx, pv.height-38);
+  const gradient = pctx.createLinearGradient(cx, top-54, cx, top+122);
+  gradient.addColorStop(0, state.skin);
+  gradient.addColorStop(1, '#c78d5b');
+  pctx.fillStyle=gradient;
+  pctx.beginPath(); pctx.arc(cx, top-18, 36, 0, Math.PI*2); pctx.fill();
+  pctx.fillRect(cx-26, top+12, 52, 96);
+  drawExpression(pctx, state.emotion, cx, top-18, state.eyes, 1);
+  drawHair(pctx, state.style, state.hair, cx, top-42);
 }
 makeSwatches('skin-sw', SKINS, 'skin');
 makeSwatches('eyes-sw', EYES, 'eyes');
 makeSwatches('hair-sw', HAIRS, 'hair');
-makeStyles(); redrawPreview();
+makeStyles();
+makeEmotions();
+redrawPreview();
 
 // Submit
 async function doRegister(){
@@ -247,6 +347,12 @@ async function doRegister(){
     st.hair = HAIRS[Math.floor(Math.random()*HAIRS.length)];
     st.eyes = EYES[Math.floor(Math.random()*EYES.length)];
     const list=STYLES.other; st.style=list[Math.floor(Math.random()*list.length)];
+    const emo=EMOTIONS[Math.floor(Math.random()*EMOTIONS.length)]; st.emotion=emo.value;
+    makeSwatches('skin-sw', SKINS, 'skin');
+    makeSwatches('eyes-sw', EYES, 'eyes');
+    makeSwatches('hair-sw', HAIRS, 'hair');
+    makeStyles();
+    makeEmotions();
     redrawPreview();
   }
 
@@ -258,6 +364,7 @@ async function doRegister(){
   f.append('hair', st.hair);
   f.append('eyes', st.eyes);
   f.append('style', st.style);
+  f.append('emotion', st.emotion);
 
   const j=await (await fetch('/api/register',{method:'POST',body:f})).json();
   if(!j.ok){ document.getElementById('err').textContent=j.error||'Ошибка'; return; }
@@ -267,7 +374,8 @@ async function doRegister(){
   try{
     const a=new FormData(); a.append('username', j.username);
     a.append('skin', state.skin); a.append('hair', state.hair); a.append('eyes', state.eyes); a.append('style', state.style);
-    await fetch('/api/appearance',{method:'POST', body:a});
+    a.append('emotion', state.emotion);
+    await fetch('/api/appearance/save',{method:'POST', body:a});
   }catch(e){}
   location.href='/?username='+encodeURIComponent(j.username);
 }
@@ -289,7 +397,8 @@ async function doLogin(){
   try{
     const a=new FormData(); a.append('username', j.username);
     a.append('skin', state.skin); a.append('hair', state.hair); a.append('eyes', state.eyes); a.append('style', state.style);
-    await fetch('/api/appearance',{method:'POST', body:a});
+    a.append('emotion', state.emotion);
+    await fetch('/api/appearance/save',{method:'POST', body:a});
   }catch(e){}
   location.href='/?username='+encodeURIComponent(j.username);
 }
