@@ -145,8 +145,18 @@ setInterval(loadOnline, 2000);
 // Modals
 const charModal=document.getElementById("char-modal");
 const shopModal=document.getElementById("shop-modal");
+const shopCategoriesPanel=document.getElementById("shop-categories");
 const emotionPanel=document.getElementById("emotion-panel");
 let emotionPanelLayoutRaf=null;
+
+const SHOP_FILTER_KEY='cp_shop_filter';
+const SHOP_CATEGORY_TYPES=['head','upper','lower','shoes','accessory'];
+const shopState={all:[], byType:{}};
+let currentShopFilter=(()=>{
+  const stored=localStorage.getItem(SHOP_FILTER_KEY)||'all';
+  if(stored==='all' || SHOP_CATEGORY_TYPES.includes(stored)) return stored;
+  return 'all';
+})();
 
 function centerEmotionSelection(panel=emotionPanel){
   if(!panel) return;
@@ -212,11 +222,34 @@ document.getElementById("char-close").addEventListener("click", ()=>{ charModal.
 document.getElementById("shop-close").addEventListener("click", ()=>{ shopModal.hidden=true; });
 [charModal,shopModal].forEach(m=>m.addEventListener("click",(e)=>{ if(e.target===m) m.hidden=true; }));
 
-// Shop
-async function loadShop(){
-  const data=await api("/api/shop");
-  const box=document.getElementById("shop"); box.innerHTML="";
-  data.items.forEach(it=>{
+function updateShopCategoryActive(){
+  if(!shopCategoriesPanel) return;
+  shopCategoriesPanel.querySelectorAll('[data-type]').forEach(btn=>{
+    const type=btn.dataset.type||'all';
+    const isActive=type===currentShopFilter;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive?'true':'false');
+  });
+}
+
+function getShopItemsForCurrentFilter(){
+  if(currentShopFilter==='all') return shopState.all;
+  return shopState.byType[currentShopFilter]||[];
+}
+
+function renderShopItems(){
+  const box=document.getElementById("shop");
+  if(!box) return;
+  box.innerHTML="";
+  const items=getShopItemsForCurrentFilter();
+  if(!items.length){
+    const empty=document.createElement('div');
+    empty.className='shop-empty';
+    empty.textContent='В этой категории пока нет товаров.';
+    box.appendChild(empty);
+    return;
+  }
+  items.forEach(it=>{
     const typeLabel=formatItemType(it.type);
     const metaParts=[typeLabel, `${it.price} монет`];
     const ariaLabel=`${it.name}, ${typeLabel}. Цена: ${it.price} монет`;
@@ -226,9 +259,46 @@ async function loadShop(){
       const r=await fetch("/api/buy",{method:"POST",body:f}); const j=await r.json();
       if(!j.ok) return alert(j.error||"Ошибка");
       await refreshMe(); await loadInventory(); await refreshAvatar();
+      await loadShop();
     });
     box.appendChild(card);
   });
+}
+
+if(shopCategoriesPanel){
+  shopCategoriesPanel.querySelectorAll('button').forEach(btn=>{
+    btn.type='button';
+    btn.setAttribute('aria-pressed','false');
+  });
+  shopCategoriesPanel.addEventListener('click', (ev)=>{
+    const btn=ev.target.closest('[data-type]');
+    if(!btn || !shopCategoriesPanel.contains(btn)) return;
+    const type=btn.dataset.type||'all';
+    if(type===currentShopFilter) return;
+    currentShopFilter=type;
+    localStorage.setItem(SHOP_FILTER_KEY, currentShopFilter);
+    updateShopCategoryActive();
+    renderShopItems();
+  });
+  updateShopCategoryActive();
+}
+
+// Shop
+async function loadShop(){
+  const data=await api("/api/shop");
+  shopState.all=Array.isArray(data.items)?data.items.slice():[];
+  shopState.byType=shopState.all.reduce((acc,it)=>{
+    const key=it.type||'unknown';
+    if(!acc[key]) acc[key]=[];
+    acc[key].push(it);
+    return acc;
+  },{});
+  if(currentShopFilter!=='all' && !getShopItemsForCurrentFilter().length){
+    currentShopFilter='all';
+    localStorage.setItem(SHOP_FILTER_KEY, currentShopFilter);
+  }
+  updateShopCategoryActive();
+  renderShopItems();
 }
 
 // Inventory & equipped
