@@ -99,27 +99,90 @@ async function loadShop(){
 }
 
 // Inventory & equipped
+const ITEM_VISUALS={
+  hat:{icon:"🎩",accent:"#6366f1",soft:"rgba(99,102,241,.14)",label:"Головной убор"},
+  head:{icon:"🎩",accent:"#6366f1",soft:"rgba(99,102,241,.14)",label:"Головной убор"},
+  hair:{icon:"💇",accent:"#c084fc",soft:"rgba(192,132,252,.16)",label:"Причёска"},
+  clothes:{icon:"👕",accent:"#0ea5e9",soft:"rgba(14,165,233,.16)",label:"Одежда"},
+  shirt:{icon:"👕",accent:"#0ea5e9",soft:"rgba(14,165,233,.16)",label:"Верх"},
+  upper:{icon:"🧥",accent:"#1d4ed8",soft:"rgba(29,78,216,.16)",label:"Верх"},
+  outfit:{icon:"🧥",accent:"#1d4ed8",soft:"rgba(29,78,216,.16)",label:"Образ"},
+  pants:{icon:"👖",accent:"#f97316",soft:"rgba(249,115,22,.18)",label:"Низ"},
+  lower:{icon:"👖",accent:"#f97316",soft:"rgba(249,115,22,.18)",label:"Низ"},
+  legs:{icon:"👖",accent:"#f97316",soft:"rgba(249,115,22,.18)",label:"Низ"},
+  shoes:{icon:"👟",accent:"#16a34a",soft:"rgba(22,163,74,.16)",label:"Обувь"},
+  boots:{icon:"🥾",accent:"#16a34a",soft:"rgba(22,163,74,.16)",label:"Обувь"},
+  accessory:{icon:"💍",accent:"#ec4899",soft:"rgba(236,72,153,.18)",label:"Аксессуар"},
+  cloak:{icon:"🧝",accent:"#f97316",soft:"rgba(249,115,22,.18)",label:"Плащ"},
+  face:{icon:"😎",accent:"#facc15",soft:"rgba(250,204,21,.2)",label:"Аксессуар"},
+  background:{icon:"🌅",accent:"#f97316",soft:"rgba(249,115,22,.18)",label:"Фон"},
+  default:{icon:"🎁",accent:"#64748b",soft:"rgba(100,116,139,.18)",label:"Предмет"}
+};
 let _inv=[];
 async function loadInventory(){
   _inv=await api("/api/inventory?username="+encodeURIComponent(username));
   const box=document.getElementById("inventory"); box.innerHTML="";
   _inv.forEach(it=>{
-    const d=document.createElement("div"); d.className="item"+(it.equipped?" equipped":"");
-    d.textContent=`${it.name} (${it.type})`;
-    d.addEventListener("click", async ()=>{
+    const visuals=ITEM_VISUALS[it.type]||ITEM_VISUALS.default;
+    const nameLabel=typeof it.name==="string"?it.name:String(it.name||ITEM_VISUALS.default.label);
+    const typeLabel=visuals.label||(typeof it.type==="string"?it.type:String(it.type||ITEM_VISUALS.default.label));
+    const card=document.createElement("div");
+    card.className="item"+(it.equipped?" equipped":"");
+    card.setAttribute("role","button");
+    card.setAttribute("aria-pressed",it.equipped?"true":"false");
+    card.setAttribute("aria-label",`${nameLabel}, ${typeLabel}${it.equipped?" (надето)":""}`);
+    card.tabIndex=0;
+    card.style.setProperty("--item-accent", visuals.accent||ITEM_VISUALS.default.accent);
+    card.style.setProperty("--item-accent-soft", visuals.soft||ITEM_VISUALS.default.soft);
+
+    const icon=document.createElement("div");
+    icon.className="item-icon";
+    icon.setAttribute("aria-hidden","true");
+    icon.textContent=visuals.icon||ITEM_VISUALS.default.icon;
+
+    const info=document.createElement("div"); info.className="item-info";
+    const nameEl=document.createElement("div"); nameEl.className="item-name"; nameEl.textContent=nameLabel;
+    const meta=document.createElement("div"); meta.className="item-meta";
+    const typeEl=document.createElement("span"); typeEl.className="item-type";
+    typeEl.textContent=typeLabel;
+    meta.appendChild(typeEl);
+    if(it.equipped){
+      const tag=document.createElement("span"); tag.className="item-equipped"; tag.textContent="Надето";
+      meta.appendChild(tag);
+    }
+    info.appendChild(nameEl); info.appendChild(meta);
+
+    card.appendChild(icon); card.appendChild(info);
+
+    const toggle=async ()=>{
       const f=new FormData(); f.append("item_id",it.id); f.append("username",username);
       await fetch("/api/toggle_equip",{method:"POST",body:f});
       await refreshAvatar(); await loadInventory();
+    };
+    card.addEventListener("click", toggle);
+    card.addEventListener("keydown",(ev)=>{
+      if(ev.key===" "||ev.key==="Enter"){ ev.preventDefault(); toggle(); }
     });
-    box.appendChild(d);
+    box.appendChild(card);
   });
   renderSlots(); renderEquipped();
 }
 function renderSlots(){
   const dict={}; _inv.forEach(i=>{ if(i.equipped) dict[i.type]=i.name; });
   document.querySelectorAll(".slot").forEach(s=>{
-    const t=s.dataset.slot; s.textContent=dict[t]||s.getAttribute("data-label")||s.textContent;
-    s.classList.toggle("active", !!dict[t]);
+    const t=s.dataset.slot;
+    if(!s.dataset.labelCache){
+      const original=s.getAttribute("data-label")||s.textContent||t||"";
+      s.dataset.labelCache=original;
+    }
+    const label=s.dataset.labelCache;
+    const current=dict[t]||"";
+    s.innerHTML="";
+    const labelEl=document.createElement("span"); labelEl.className="slot-label"; labelEl.textContent=label;
+    const valueEl=document.createElement("span"); valueEl.className="slot-item"; valueEl.textContent=current||"—";
+    s.appendChild(labelEl); s.appendChild(valueEl);
+    s.classList.toggle("active", !!current);
+    s.setAttribute("aria-label", current ? `${label}: ${current}` : `${label}: пусто`);
   });
 }
 document.addEventListener("click", async (e)=>{
