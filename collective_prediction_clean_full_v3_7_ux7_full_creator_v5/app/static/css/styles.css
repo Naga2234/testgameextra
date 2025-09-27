@@ -92,6 +92,7 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
   .item{min-height:80px}
   .equip-pill{padding:10px 16px;font-size:15px}
   .creator{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr;row-gap:12px}
 }
 
 /* --- Creator swatches --- */
