@@ -111,7 +111,7 @@ function formatItemType(type){
 // Coins
 async function refreshMe(){
   const me=await api("/api/me?username="+encodeURIComponent(username));
-  document.querySelectorAll("#coins").forEach(el=>el.textContent=me.coins);
+  document.querySelectorAll(".coins-amount").forEach(el=>el.textContent=me.coins);
 }
 let incomeTimerId=null, incomeSyncId=null, leftSec=300;
 function renderIncomeTimer(){
