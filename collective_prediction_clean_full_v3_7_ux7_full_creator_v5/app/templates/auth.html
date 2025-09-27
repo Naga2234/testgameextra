@@ -41,11 +41,18 @@
     <div class="panel active" id="panel-register">
       <div class="creator">
         <div class="creator-left">
-          <div class="row">
-            <span class="lbl">Пол</span>
-            <label><input type="radio" name="gender" value="male"> Мужской</label>
-            <label><input type="radio" name="gender" value="female"> Женский</label>
-            <label><input type="radio" name="gender" value="other" checked> Не определился</label>
+          <div class="row gender-select-row">
+            <div class="hint-row">
+              <label class="lbl" for="gender-select">Пол</label>
+              <span class="small-muted">влияет на силуэт и стиль</span>
+            </div>
+            <div class="select-wrap">
+              <select id="gender-select" class="pill-select">
+                <option value="male">Мужской</option>
+                <option value="female">Женский</option>
+                <option value="other" selected>Не определился</option>
+              </select>
+            </div>
           </div>
 
           <div class="row">
@@ -135,7 +142,7 @@ document.querySelectorAll('.pw-eye').forEach(btn=>btn.addEventListener('click',(
   el.type = (el.type==='password'?'text':'password');
 }));
 
-function genderValue(){ const el=[...document.querySelectorAll('input[name="gender"]')].find(e=>e.checked); return el?el.value:"other"; }
+function genderValue(){ const el=document.getElementById('gender-select'); return el?el.value||'other':'other'; }
 function validateUser(name){ return (name||'').trim().length>=3; }
 function validatePass(p){ return (p||'').length>=6; }
 
@@ -150,6 +157,11 @@ const EMOTIONS=[
   {value:'surprised',label:'Удивление',icon:'😯'},
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
+const GENDER_OUTFITS={
+  male:{primary:'#3a6ea5',secondary:'#2e4f79',accent:'#1f2f57'},
+  female:{primary:'#f19ad9',secondary:'#d16ec7',accent:'#ffd6ef'},
+  other:{primary:'#4c8fca',secondary:'#3a6aa3',accent:'#9fd9ff'}
+};
 
 // Hairstyles catalog by gender
 const STYLES = {
@@ -236,9 +248,48 @@ function makeStyles(){
     box.appendChild(b);
   });
 }
+function updateEmotionScrollMask(box){
+  if(!box) return;
+  const width=box.clientWidth;
+  if(width<=0){
+    box.dataset.scrollLeft='0';
+    box.dataset.scrollRight='0';
+    return;
+  }
+  const maxScroll=Math.max(0, box.scrollWidth-width);
+  if(maxScroll<=1){
+    box.dataset.scrollLeft='0';
+    box.dataset.scrollRight='0';
+    return;
+  }
+  box.dataset.scrollLeft=box.scrollLeft>1?'1':'0';
+  box.dataset.scrollRight=box.scrollLeft<maxScroll-1?'1':'0';
+}
+function centerEmotionInRow(box){
+  if(!box) return;
+  const width=box.clientWidth;
+  if(width<=0){ updateEmotionScrollMask(box); return; }
+  const selected=box.querySelector('.emotion-btn[data-selected="1"]');
+  const maxScroll=Math.max(0, box.scrollWidth-width);
+  if(selected){
+    const target=selected.offsetLeft-(width-selected.offsetWidth)/2;
+    box.scrollLeft=Math.max(0, Math.min(maxScroll, target));
+  }
+  updateEmotionScrollMask(box);
+}
+function attachEmotionScroll(box){
+  if(!box) return;
+  if(!box.dataset.scrollHook){
+    box.addEventListener('scroll',()=>updateEmotionScrollMask(box),{passive:true});
+    box.dataset.scrollHook='1';
+  }
+  requestAnimationFrame(()=>centerEmotionInRow(box));
+}
 function makeEmotions(){
   const box=document.getElementById('emotion-sw'); if(!box) return;
   box.innerHTML="";
+  box.dataset.scrollLeft='0';
+  box.dataset.scrollRight='0';
   const current=state.emotion;
   EMOTIONS.forEach(em=>{
     const btn=document.createElement('button');
@@ -251,14 +302,27 @@ function makeEmotions(){
       box.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
       btn.dataset.selected=1;
       redrawPreview();
+      centerEmotionInRow(box);
     });
     if(em.value===current) btn.dataset.selected=1;
     box.appendChild(btn);
   });
+  attachEmotionScroll(box);
 }
-['male','female','other'].forEach(v=>{
-  document.querySelector('input[name="gender"][value="'+v+'"]').addEventListener('change',()=>{ makeStyles(); makeEmotions(); redrawPreview(); });
-});
+const genderSelect=document.getElementById('gender-select');
+if(genderSelect){
+  try{
+    const storedGender=localStorage.getItem('cp_gender');
+    if(storedGender && [...genderSelect.options].some(opt=>opt.value===storedGender)){
+      genderSelect.value=storedGender;
+    }
+  }catch(e){}
+  genderSelect.addEventListener('change',()=>{
+    makeStyles();
+    makeEmotions();
+    redrawPreview();
+  });
+}
 
 // Preview drawing
 const pv=document.getElementById('preview'), pctx=pv.getContext('2d');
@@ -331,12 +395,66 @@ function redrawPreview(){
   pctx.clearRect(0,0,pv.width,pv.height);
   const cx=pv.width/2, top=84;
   drawShadow(pctx, cx, pv.height-38);
-  const gradient = pctx.createLinearGradient(cx, top-54, cx, top+122);
-  gradient.addColorStop(0, state.skin);
-  gradient.addColorStop(1, '#c78d5b');
-  pctx.fillStyle=gradient;
-  pctx.beginPath(); pctx.arc(cx, top-18, 36, 0, Math.PI*2); pctx.fill();
-  pctx.fillRect(cx-26, top+12, 52, 96);
+  const gender=genderValue();
+  const outfit=GENDER_OUTFITS[gender]||GENDER_OUTFITS.other;
+
+  const headGradient = pctx.createLinearGradient(cx, top-54, cx, top+12);
+  headGradient.addColorStop(0, state.skin);
+  headGradient.addColorStop(1, '#c78d5b');
+  pctx.fillStyle=headGradient;
+  pctx.beginPath();
+  pctx.arc(cx, top-18, 36, 0, Math.PI*2);
+  pctx.fill();
+
+  const bodyTop = top+12;
+  const bodyHeight = gender==='female'?90:96;
+  const bodyWidth = gender==='female'?48:52;
+  const half=bodyWidth/2;
+  const bodyGradient = pctx.createLinearGradient(cx, bodyTop, cx, bodyTop+bodyHeight);
+  bodyGradient.addColorStop(0, state.skin);
+  bodyGradient.addColorStop(1, '#c78d5b');
+  pctx.fillStyle=bodyGradient;
+  pctx.beginPath();
+  if(gender==='female'){
+    pctx.moveTo(cx-half*0.95, bodyTop+20);
+    pctx.quadraticCurveTo(cx, bodyTop-8, cx+half*0.95, bodyTop+20);
+    pctx.lineTo(cx+half*0.7, bodyTop+bodyHeight-6);
+    pctx.lineTo(cx-half*0.7, bodyTop+bodyHeight-6);
+    pctx.closePath();
+  }else{
+    pctx.rect(cx-half, bodyTop, bodyWidth, bodyHeight);
+  }
+  pctx.fill();
+
+  if(gender==='female'){
+    const dressGrad = pctx.createLinearGradient(cx, bodyTop+8, cx, bodyTop+bodyHeight-4);
+    dressGrad.addColorStop(0, outfit.primary);
+    dressGrad.addColorStop(1, outfit.secondary);
+    pctx.fillStyle=dressGrad;
+    pctx.beginPath();
+    pctx.moveTo(cx-half*0.92, bodyTop+24);
+    pctx.quadraticCurveTo(cx, bodyTop+bodyHeight*0.32, cx+half*0.92, bodyTop+24);
+    pctx.lineTo(cx+half*0.68, bodyTop+bodyHeight-10);
+    pctx.lineTo(cx-half*0.68, bodyTop+bodyHeight-10);
+    pctx.closePath();
+    pctx.fill();
+    pctx.fillStyle=outfit.accent;
+    const beltWidth=bodyWidth*0.9;
+    pctx.fillRect(cx-beltWidth/2, bodyTop+bodyHeight*0.48, beltWidth, 6);
+    pctx.fillStyle=outfit.primary;
+    pctx.beginPath();
+    pctx.ellipse(cx-half*0.88, bodyTop+34, 9, 14, 0, 0, Math.PI*2);
+    pctx.ellipse(cx+half*0.88, bodyTop+34, 9, 14, 0, 0, Math.PI*2);
+    pctx.fill();
+  }else{
+    pctx.fillStyle=outfit.primary;
+    pctx.fillRect(cx-half, bodyTop+8, bodyWidth, bodyHeight*0.62);
+    pctx.fillStyle=outfit.secondary;
+    pctx.fillRect(cx-half+6, bodyTop+bodyHeight*0.62, bodyWidth-12, bodyHeight*0.38);
+    pctx.fillStyle=outfit.accent;
+    pctx.fillRect(cx-half, bodyTop+bodyHeight*0.62-6, bodyWidth, 6);
+  }
+
   drawExpression(pctx, state.emotion, cx, top-18, state.eyes, 1);
   drawHair(pctx, state.style, state.hair, cx, top-42);
 }
