@@ -97,9 +97,15 @@ function formatItemType(type){
 }
 
 // Coins
+function updateShopBalance(coins){
+  const shopEl=document.getElementById("shop-coins");
+  if(shopEl && typeof coins!=="undefined") shopEl.textContent=coins;
+}
 async function refreshMe(){
   const me=await api("/api/me?username="+encodeURIComponent(username));
   document.querySelectorAll("#coins").forEach(el=>el.textContent=me.coins);
+  updateShopBalance(me.coins);
+  return me;
 }
 let incomeTimerId=null, incomeSyncId=null, leftSec=300;
 function renderIncomeTimer(){
@@ -207,7 +213,12 @@ document.getElementById("btn-character").addEventListener("click", async ()=>{
   scheduleEmotionPanelLayout();
   await initIncomeTimer();
 });
-document.getElementById("btn-shop").addEventListener("click", ()=>{ shopModal.hidden=false; loadShop(); });
+document.getElementById("btn-shop").addEventListener("click", async ()=>{
+  shopModal.hidden=false;
+  const me=await refreshMe();
+  updateShopBalance(me.coins);
+  await loadShop();
+});
 document.getElementById("char-close").addEventListener("click", ()=>{ charModal.hidden=true; });
 document.getElementById("shop-close").addEventListener("click", ()=>{ shopModal.hidden=true; });
 [charModal,shopModal].forEach(m=>m.addEventListener("click",(e)=>{ if(e.target===m) m.hidden=true; }));
@@ -225,7 +236,9 @@ async function loadShop(){
       const f=new FormData(); f.append("item_id",it.id); f.append("username",username);
       const r=await fetch("/api/buy",{method:"POST",body:f}); const j=await r.json();
       if(!j.ok) return alert(j.error||"Ошибка");
-      await refreshMe(); await loadInventory(); await refreshAvatar();
+      const me=await refreshMe();
+      updateShopBalance(me.coins);
+      await loadInventory(); await refreshAvatar();
     });
     box.appendChild(card);
   });
