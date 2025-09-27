@@ -24,6 +24,78 @@ const EMOTIONS = [
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
 
+const ITEM_TYPE_LABELS = {
+  head: 'Голова',
+  upper: 'Верх',
+  lower: 'Низ',
+  cloak: 'Плащ',
+  shoes: 'Обувь',
+  accessory: 'Аксессуар'
+};
+
+const ITEM_VISUALS = {
+  head:      {icon: '🎩', accent: '#6366f1', accentSoft: '#e0e7ff'},
+  upper:     {icon: '🧥', accent: '#f97316', accentSoft: '#ffe7d1'},
+  lower:     {icon: '👖', accent: '#2563eb', accentSoft: '#dbeafe'},
+  cloak:     {icon: '🧙', accent: '#8b5cf6', accentSoft: '#ede9fe'},
+  shoes:     {icon: '👢', accent: '#b91c1c', accentSoft: '#fee2e2'},
+  accessory: {icon: '💍', accent: '#fbbf24', accentSoft: '#fef3c7'},
+  default:   {icon: '🎁', accent: '#64748b', accentSoft: '#e2e8f0'}
+};
+
+function getItemVisual(type){
+  return ITEM_VISUALS[type] || ITEM_VISUALS.default;
+}
+
+function createItemCard(item, options={}){
+  const visuals = getItemVisual(item.type);
+  const card=document.createElement('div');
+  card.className='item';
+  card.tabIndex=0;
+  card.setAttribute('role', options.role || 'button');
+  if(options.ariaPressed!==undefined){
+    card.setAttribute('aria-pressed', options.ariaPressed ? 'true' : 'false');
+  }
+  const labelParts=[item.name];
+  if(options.metaLabel){ labelParts.push(options.metaLabel); }
+  card.setAttribute('aria-label', options.ariaLabel || labelParts.join(', '));
+  card.style.setProperty('--item-accent', visuals.accent);
+  card.style.setProperty('--item-accent-soft', visuals.accentSoft);
+  const icon=document.createElement('div');
+  icon.className='item-icon';
+  icon.textContent=visuals.icon;
+  const info=document.createElement('div');
+  info.className='item-info';
+  const name=document.createElement('div');
+  name.className='item-name';
+  name.textContent=item.name;
+  info.appendChild(name);
+  const meta=document.createElement('div');
+  meta.className='item-meta';
+  const metaParts = options.metaParts || [];
+  metaParts.filter(Boolean).forEach(text=>{
+    const span=document.createElement('span');
+    span.textContent=text;
+    meta.appendChild(span);
+  });
+  if(meta.childNodes.length){
+    info.appendChild(meta);
+  }
+  card.appendChild(icon);
+  card.appendChild(info);
+  card.addEventListener('keydown', (ev)=>{
+    if(ev.key==='Enter' || ev.key===' ' || ev.key==='Spacebar'){
+      ev.preventDefault();
+      card.click();
+    }
+  });
+  return card;
+}
+
+function formatItemType(type){
+  return ITEM_TYPE_LABELS[type] || type;
+}
+
 // Coins
 async function refreshMe(){
   const me=await api("/api/me?username="+encodeURIComponent(username));
@@ -145,14 +217,17 @@ async function loadShop(){
   const data=await api("/api/shop");
   const box=document.getElementById("shop"); box.innerHTML="";
   data.items.forEach(it=>{
-    const d=document.createElement("div"); d.className="item"; d.innerHTML=`<b>${it.name}</b><br><small>${it.type}</small><br>${it.price} монет`;
-    d.addEventListener("click", async ()=>{
+    const typeLabel=formatItemType(it.type);
+    const metaParts=[typeLabel, `${it.price} монет`];
+    const ariaLabel=`${it.name}, ${typeLabel}. Цена: ${it.price} монет`;
+    const card=createItemCard(it,{metaParts, metaLabel:`${typeLabel}, ${it.price} монет`, ariaLabel});
+    card.addEventListener("click", async ()=>{
       const f=new FormData(); f.append("item_id",it.id); f.append("username",username);
       const r=await fetch("/api/buy",{method:"POST",body:f}); const j=await r.json();
       if(!j.ok) return alert(j.error||"Ошибка");
       await refreshMe(); await loadInventory(); await refreshAvatar();
     });
-    box.appendChild(d);
+    box.appendChild(card);
   });
 }
 
@@ -162,14 +237,20 @@ async function loadInventory(){
   _inv=await api("/api/inventory?username="+encodeURIComponent(username));
   const box=document.getElementById("inventory"); box.innerHTML="";
   _inv.forEach(it=>{
-    const d=document.createElement("div"); d.className="item"+(it.equipped?" equipped":"");
-    d.textContent=`${it.name} (${it.type})`;
-    d.addEventListener("click", async ()=>{
+    const typeLabel=formatItemType(it.type);
+    const metaParts=[typeLabel, it.equipped?"Надето":"В рюкзаке"];
+    const card=createItemCard(it,{
+      metaParts,
+      metaLabel:`${typeLabel}, ${it.equipped?"надето":"в рюкзаке"}`,
+      ariaPressed:it.equipped
+    });
+    if(it.equipped) card.classList.add('equipped');
+    card.addEventListener("click", async ()=>{
       const f=new FormData(); f.append("item_id",it.id); f.append("username",username);
       await fetch("/api/toggle_equip",{method:"POST",body:f});
       await refreshAvatar(); await loadInventory();
     });
-    box.appendChild(d);
+    box.appendChild(card);
   });
   renderSlots(); renderEquipped();
 }
