@@ -166,14 +166,30 @@ let state = {
   style: "short",
   emotion: "smile"
 };
+let appearanceLoaded = false;
 try{
   const stored=JSON.parse(localStorage.getItem('cp_appearance')||'{}');
-  if(stored.skin && SKINS.includes(stored.skin)) state.skin=stored.skin;
-  if(stored.hair && HAIRS.includes(stored.hair)) state.hair=stored.hair;
-  if(stored.eyes && EYES.includes(stored.eyes)) state.eyes=stored.eyes;
-  if(stored.style && Object.values(STYLES).some(list=>list.includes(stored.style))) state.style=stored.style;
-  if(stored.emotion && EMOTIONS.some(e=>e.value===stored.emotion)) state.emotion=stored.emotion;
+  if(stored.skin && SKINS.includes(stored.skin)){ state.skin=stored.skin; appearanceLoaded=true; }
+  if(stored.hair && HAIRS.includes(stored.hair)){ state.hair=stored.hair; appearanceLoaded=true; }
+  if(stored.eyes && EYES.includes(stored.eyes)){ state.eyes=stored.eyes; appearanceLoaded=true; }
+  if(stored.style && Object.values(STYLES).some(list=>list.includes(stored.style))){ state.style=stored.style; appearanceLoaded=true; }
+  if(stored.emotion && EMOTIONS.some(e=>e.value===stored.emotion)){ state.emotion=stored.emotion; appearanceLoaded=true; }
 }catch(e){}
+
+function randomizeAppearanceFor(g){
+  const genderKey = g||'other';
+  state.skin = SKINS[Math.floor(Math.random()*SKINS.length)];
+  state.hair = HAIRS[Math.floor(Math.random()*HAIRS.length)];
+  state.eyes = EYES[Math.floor(Math.random()*EYES.length)];
+  const list = STYLES[genderKey] || STYLES.other;
+  state.style = list[Math.floor(Math.random()*list.length)];
+  const emo = EMOTIONS[Math.floor(Math.random()*EMOTIONS.length)];
+  state.emotion = emo.value;
+}
+
+if(!appearanceLoaded && genderValue()==='other'){
+  randomizeAppearanceFor('other');
+}
 
 // Build swatches
 function makeSwatches(id, arr, cls){
@@ -339,22 +355,8 @@ async function doRegister(){
   document.getElementById('r-p-err').textContent = validatePass(p)?'':'минимум 6 символов';
   if(!validateUser(u)||!validatePass(p)) return;
 
-  // if other — небольшая рандомизация в рамках палитры
   let g=genderValue();
   const st=state;
-  if(g==='other'){
-    st.skin = SKINS[Math.floor(Math.random()*SKINS.length)];
-    st.hair = HAIRS[Math.floor(Math.random()*HAIRS.length)];
-    st.eyes = EYES[Math.floor(Math.random()*EYES.length)];
-    const list=STYLES.other; st.style=list[Math.floor(Math.random()*list.length)];
-    const emo=EMOTIONS[Math.floor(Math.random()*EMOTIONS.length)]; st.emotion=emo.value;
-    makeSwatches('skin-sw', SKINS, 'skin');
-    makeSwatches('eyes-sw', EYES, 'eyes');
-    makeSwatches('hair-sw', HAIRS, 'hair');
-    makeStyles();
-    makeEmotions();
-    redrawPreview();
-  }
 
   const f=new FormData();
   f.append('username', u);
