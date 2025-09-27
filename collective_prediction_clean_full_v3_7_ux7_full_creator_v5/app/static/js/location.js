@@ -73,9 +73,67 @@ setInterval(loadOnline, 2000);
 // Modals
 const charModal=document.getElementById("char-modal");
 const shopModal=document.getElementById("shop-modal");
+const emotionPanel=document.getElementById("emotion-panel");
+let emotionPanelLayoutRaf=null;
+
+function centerEmotionSelection(panel=emotionPanel){
+  if(!panel) return;
+  const selected=panel.querySelector('.emotion-btn[data-selected="1"]');
+  if(!selected) return;
+  const width=panel.clientWidth;
+  if(width<=0) return;
+  const maxScroll=Math.max(0, panel.scrollWidth-width);
+  const target=selected.offsetLeft - (width-selected.offsetWidth)/2;
+  const clamped=Math.max(0, Math.min(maxScroll, target));
+  panel.scrollLeft=clamped;
+}
+
+function updateEmotionScrollHints(panel=emotionPanel){
+  if(!panel) return;
+  const width=panel.clientWidth;
+  if(width<=0){
+    panel.dataset.scrollLeft='0';
+    panel.dataset.scrollRight='0';
+    return;
+  }
+  const maxScroll=Math.max(0, panel.scrollWidth-width);
+  if(maxScroll<=1){
+    panel.dataset.scrollLeft='0';
+    panel.dataset.scrollRight='0';
+    return;
+  }
+  panel.dataset.scrollLeft=panel.scrollLeft>1?'1':'0';
+  panel.dataset.scrollRight=panel.scrollLeft<maxScroll-1?'1':'0';
+}
+
+function scheduleEmotionPanelLayout(){
+  if(!emotionPanel) return;
+  if(emotionPanelLayoutRaf) cancelAnimationFrame(emotionPanelLayoutRaf);
+  emotionPanelLayoutRaf=requestAnimationFrame(()=>{
+    emotionPanelLayoutRaf=requestAnimationFrame(()=>{
+      emotionPanelLayoutRaf=null;
+      if(charModal?.hidden) return;
+      centerEmotionSelection();
+      updateEmotionScrollHints();
+    });
+  });
+}
+
+if(emotionPanel){
+  emotionPanel.addEventListener('scroll', ()=>updateEmotionScrollHints(), {passive:true});
+}
+
+window.addEventListener('resize', ()=>{
+  if(charModal?.hidden) return;
+  scheduleEmotionPanelLayout();
+});
+
 document.getElementById("btn-character").addEventListener("click", async ()=>{
+  charModal.hidden=false;
   renderEmotionPanel();
-  charModal.hidden=false; drawCharPreview(); await initIncomeTimer();
+  drawCharPreview();
+  scheduleEmotionPanelLayout();
+  await initIncomeTimer();
 });
 document.getElementById("btn-shop").addEventListener("click", ()=>{ shopModal.hidden=false; loadShop(); });
 document.getElementById("char-close").addEventListener("click", ()=>{ charModal.hidden=true; });
@@ -240,9 +298,11 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
 }
 
 function renderEmotionPanel(){
-  const panel=document.getElementById('emotion-panel');
+  const panel=emotionPanel;
   if(!panel) return;
   panel.innerHTML="";
+  panel.dataset.scrollLeft='0';
+  panel.dataset.scrollRight='0';
   const current=(mePos.appearance&&mePos.appearance.emotion)||'smile';
   EMOTIONS.forEach(em=>{
     const btn=document.createElement('button');
@@ -260,9 +320,11 @@ function renderEmotionPanel(){
       localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
       drawStage(); drawCharPreview(); sendAppearance();
       try{ await persistAppearance(); }catch(e){ console.warn(e); }
+      scheduleEmotionPanelLayout();
     });
     panel.appendChild(btn);
   });
+  scheduleEmotionPanelLayout();
 }
 
 async function persistAppearance(){
