@@ -16,6 +16,14 @@ const NAME_BASE_PX = 12;
 const NAME_SCENE_PX = Math.round(NAME_BASE_PX * SCALE_SCENE) + 10;
 const NAME_PREVIEW_PX = Math.round(NAME_BASE_PX * SCALE_PREVIEW) + 10;
 
+const EMOTIONS = [
+  {value:'smile',label:'Улыбка',icon:'🙂'},
+  {value:'neutral',label:'Спокойно',icon:'😐'},
+  {value:'frown',label:'Серьёзный',icon:'😠'},
+  {value:'surprised',label:'Удивлён',icon:'😯'},
+  {value:'sleepy',label:'Сонный',icon:'😴'}
+];
+
 // Coins
 async function refreshMe(){
   const me=await api("/api/me?username="+encodeURIComponent(username));
@@ -65,8 +73,9 @@ setInterval(loadOnline, 2000);
 // Modals
 const charModal=document.getElementById("char-modal");
 const shopModal=document.getElementById("shop-modal");
-document.getElementById("btn-character").addEventListener("click", async ()=>{ 
-  charModal.hidden=false; drawCharPreview(); await initIncomeTimer(); 
+document.getElementById("btn-character").addEventListener("click", async ()=>{
+  renderEmotionPanel();
+  charModal.hidden=false; drawCharPreview(); await initIncomeTimer();
 });
 document.getElementById("btn-shop").addEventListener("click", ()=>{ shopModal.hidden=false; loadShop(); });
 document.getElementById("char-close").addEventListener("click", ()=>{ charModal.hidden=true; });
@@ -134,27 +143,77 @@ function renderEquipped(){
 }
 
 // ---- Appearance (colors + hairstyle) ----
-let myAppearance = {};
-function applyAppearanceTo(p){ p.appearance = myAppearance; }
+const storedAppearance = (()=>{ try{ return JSON.parse(localStorage.getItem('cp_appearance')||'{}'); }catch(e){ return {}; } })();
+
+function hydrateAppearance(app){
+  const base = Object.assign({}, {skin:'#e6caa6', hair:'#2b2b2b', eyes:'#2b4c7e', style:'short', emotion:'smile'}, app||{});
+  if(!EMOTIONS.some(e=>e.value===base.emotion)) base.emotion='smile';
+  return base;
+}
+
+let myAppearance = hydrateAppearance(storedAppearance);
+function applyAppearanceTo(p){ p.appearance = hydrateAppearance(p.appearance); }
+
+function drawShadowMini(ctx2, x, y, scale){
+  ctx2.save();
+  ctx2.fillStyle='rgba(0,0,0,0.2)';
+  ctx2.beginPath();
+  ctx2.ellipse(x, y, 10*scale, 4*scale, 0, 0, Math.PI*2);
+  ctx2.fill();
+  ctx2.restore();
+}
+
+function drawExpressionMini(ctx2, emotion, cx, cy, eyesColor, scale){
+  ctx2.save();
+  const eyeDx = 4*scale;
+  const eyeR = 1.6*scale;
+  ctx2.fillStyle=eyesColor;
+  if(emotion==='surprised'){
+    ctx2.beginPath(); ctx2.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
+    ctx2.beginPath(); ctx2.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
+  }else if(emotion==='sleepy'){
+    const h=Math.max(1,0.9*scale);
+    ctx2.fillRect(cx-eyeDx-eyeR, cy-h/2, eyeR*2, h);
+    ctx2.fillRect(cx+eyeDx-eyeR, cy-h/2, eyeR*2, h);
+  }else if(emotion==='frown'){
+    ctx2.beginPath(); ctx2.ellipse(cx-eyeDx, cy, eyeR+0.6*scale, eyeR-0.6*scale, 0, 0, Math.PI*2); ctx2.fill();
+    ctx2.beginPath(); ctx2.ellipse(cx+eyeDx, cy, eyeR+0.6*scale, eyeR-0.6*scale, 0, 0, Math.PI*2); ctx2.fill();
+  }else{
+    ctx2.beginPath(); ctx2.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
+    ctx2.beginPath(); ctx2.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
+  }
+  ctx2.strokeStyle='#2f1f12';
+  ctx2.lineWidth=Math.max(1,0.9*scale);
+  const mouthY = cy + 3*scale;
+  const mouthW = 6*scale;
+  if(emotion==='smile'){
+    ctx2.beginPath(); ctx2.arc(cx, mouthY+1.2*scale, mouthW, 0, Math.PI); ctx2.stroke();
+  }else if(emotion==='frown'){
+    ctx2.beginPath(); ctx2.arc(cx, mouthY+4*scale, mouthW, Math.PI, 0); ctx2.stroke();
+  }else if(emotion==='surprised'){
+    ctx2.beginPath(); ctx2.arc(cx, mouthY+1*scale, 2.4*scale, 0, Math.PI*2); ctx2.stroke();
+  }else{
+    ctx2.beginPath(); ctx2.moveTo(cx-mouthW, mouthY); ctx2.lineTo(cx+mouthW, mouthY); ctx2.stroke();
+  }
+  ctx2.restore();
+}
+
 function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
-  const app = p.appearance || {};
-  const skin = app.skin || "#e6caa6";
-  const hair = app.hair || "#2b2b2b";
-  const eyes = app.eyes || "#2b4c7e";
-  const style = app.style || "short";
+  const app = hydrateAppearance(p.appearance);
+  const skin = app.skin;
+  const hair = app.hair;
+  const eyes = app.eyes;
+  const style = app.style;
+  const emotion = app.emotion;
 
   const bx=p.x-18*scale, by=p.y-24*scale;
-  // cloak if any
+  drawShadowMini(ctx2, p.x, p.y+18*scale, scale*0.9);
   if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
   if(p.equip && p.equip.lower){ ctx2.fillStyle="#2e4f79"; ctx2.fillRect(bx+4*scale,by+24*scale,28*scale,16*scale); }
   if(p.equip && p.equip.upper){ ctx2.fillStyle="#3a6ea5"; ctx2.fillRect(bx+4*scale,by+18*scale,28*scale,16*scale); }
-  // body
   ctx2.fillStyle=skin; ctx2.fillRect(bx+8*scale,by+20*scale,20*scale,28*scale);
-  // shoes
   if(p.equip && p.equip.shoes){ ctx2.fillStyle="#263b57"; ctx2.fillRect(bx+4*scale,by+40*scale,28*scale,6*scale); }
-  // head
   ctx2.fillStyle=skin; ctx2.fillRect(bx+12*scale,by+4*scale,12*scale,12*scale);
-  // hair
   ctx2.fillStyle=hair;
   if(style==="short"){ ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); }
   else if(style==="fade"){ ctx2.fillRect(bx+10*scale,by+3*scale,16*scale,5*scale); }
@@ -170,11 +229,8 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   else if(style==="bun"){ ctx2.beginPath(); ctx2.arc(p.x, by+2*scale, 3*scale, 0, Math.PI*2); ctx2.fill(); ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,5*scale); }
   else if(style==="braids"){ for(let i=0;i<3;i++){ ctx2.fillRect(bx+12*scale+i*4*scale, by+2*scale, 3*scale, 12*scale); } }
   else { ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); }
-// eyes
-  ctx2.fillStyle=eyes; ctx2.fillRect(bx+14*scale,by+8*scale,2*scale,2*scale); ctx2.fillRect(bx+18*scale,by+8*scale,2*scale,2*scale);
-  // hat from equip
+  drawExpressionMini(ctx2, emotion, p.x, by+8*scale, eyes, scale);
   if(p.equip && p.equip.head){ ctx2.fillStyle="#e94560"; ctx2.fillRect(bx+6*scale,by+0*scale,24*scale,4*scale); }
-  // accessory
   if(p.equip && p.equip.accessory){ ctx2.fillStyle="#f8b500"; ctx2.beginPath(); ctx2.arc(p.x,by+26*scale,4*scale,0,Math.PI*2); ctx2.fill(); }
 
   if(withName){
@@ -183,10 +239,48 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   }
 }
 
+function renderEmotionPanel(){
+  const panel=document.getElementById('emotion-panel');
+  if(!panel) return;
+  panel.innerHTML="";
+  const current=(mePos.appearance&&mePos.appearance.emotion)||'smile';
+  EMOTIONS.forEach(em=>{
+    const btn=document.createElement('button');
+    btn.type='button';
+    btn.className='emotion-btn';
+    btn.innerHTML=`<span class="emo-icon">${em.icon}</span><span>${em.label}</span>`;
+    btn.dataset.val=em.value;
+    btn.dataset.selected = em.value===current ? 1 : 0;
+    btn.addEventListener('click', async ()=>{
+      if(mePos.appearance?.emotion===em.value) return;
+      panel.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
+      btn.dataset.selected=1;
+      mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: em.value}));
+      myAppearance = Object.assign({}, mePos.appearance);
+      localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+      drawStage(); drawCharPreview(); sendAppearance();
+      try{ await persistAppearance(); }catch(e){ console.warn(e); }
+    });
+    panel.appendChild(btn);
+  });
+}
+
+async function persistAppearance(){
+  const app = hydrateAppearance(mePos.appearance);
+  const f=new FormData();
+  f.append('username', username);
+  f.append('skin', app.skin);
+  f.append('hair', app.hair);
+  f.append('eyes', app.eyes);
+  f.append('style', app.style);
+  f.append('emotion', app.emotion);
+  await fetch('/api/appearance/save',{method:'POST', body:f});
+}
+
 // Stage rendering
 const stage=document.getElementById("stage"), ctx=stage.getContext("2d");
 const charCanvas=document.getElementById("char-canvas"), cctx=charCanvas.getContext("2d");
-let mePos={name:username,x:520,y:340,equip:{},appearance:(()=>{try{return JSON.parse(localStorage.getItem('cp_appearance')||'{}')}catch(e){return {}}})()||{}},
+let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance)},
     others={};
 
 function drawStage(){
@@ -205,8 +299,12 @@ document.getElementById("go-right").addEventListener("click", ()=>{ mePos.x=Math
 
 async function refreshAvatar(){
   const st=await api("/api/avatar_state?username="+encodeURIComponent(username));
-  mePos.equip = st.slots || {}; 
-  mePos.appearance = st.appearance || mePos.appearance || {};
+  mePos.equip = st.slots || {};
+  const normalized = hydrateAppearance(st.appearance || mePos.appearance || {});
+  mePos.appearance = Object.assign({}, normalized);
+  myAppearance = Object.assign({}, normalized);
+  localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+  renderEmotionPanel();
   drawStage(); drawCharPreview(); sendState(); sendAppearance();
 }
 
@@ -224,14 +322,23 @@ function connectWS(){
     const d=JSON.parse(ev.data);
     if(d.type==="chat"){ addMsg(`${d.name}: ${d.msg}`); }
     else if(d.type==="snapshot"){
-      // позиция «я» с сервера (чтобы не дублироваться и синхронизировать)
-      if(d.me){ mePos.x=d.me.x; mePos.y=d.me.y; mePos.equip=d.me.equip||{}; mePos.appearance=d.me.appearance||mePos.appearance||{}; }
-      others={}; (d.players||[]).forEach(p=>{ if(p.name===mePos.name) return; others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:p.appearance||{}}; });
-      drawStage();
+      if(d.me){
+        mePos.x=d.me.x; mePos.y=d.me.y; mePos.equip=d.me.equip||{};
+        mePos.appearance = hydrateAppearance(d.me.appearance || mePos.appearance);
+        myAppearance = Object.assign({}, mePos.appearance);
+        localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+        renderEmotionPanel();
+      }
+      others={};
+      (d.players||[]).forEach(p=>{
+        if(p.name===mePos.name) return;
+        others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance)};
+      });
+      drawStage(); drawCharPreview();
     }
-    else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:{}}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
-    else if(d.type==="state"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:{}}); others[d.name].equip=d.equip||{}; drawStage(); }
-    else if(d.type==="appearance"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:{}}); others[d.name].appearance=d.appearance||{}; drawStage(); }
+    else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:hydrateAppearance({})}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
+    else if(d.type==="state"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({})}); others[d.name].equip=d.equip||{}; if(d.appearance) others[d.name].appearance=hydrateAppearance(d.appearance); drawStage(); }
+    else if(d.type==="appearance"){ if(d.name===mePos.name){ mePos.appearance=hydrateAppearance(d.appearance||mePos.appearance); myAppearance=Object.assign({}, mePos.appearance); localStorage.setItem('cp_appearance', JSON.stringify(myAppearance)); renderEmotionPanel(); drawStage(); drawCharPreview(); return; } (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({})}); others[d.name].appearance=hydrateAppearance(d.appearance); drawStage(); }
     else if(d.type==="coins"){ if(d.name===mePos.name){ refreshMe(); } }
     else if(d.type==="system"){ sys(d.text); loadOnline(); }
   }catch(e){ console.error(e); } };
@@ -242,8 +349,8 @@ window.addEventListener("beforeunload", sendLeave);
 function sendChat(){ const t=(input.value||"").trim(); if(!t) return; if(ws?.readyState!==1){ sys("нет соединения"); return; } ws.send(JSON.stringify({type:"chat", name:mePos.name, msg:t})); input.value=""; }
 btn.addEventListener("click", sendChat); input.addEventListener("keypress",(e)=>{ if(e.key==="Enter") sendChat(); });
 function sendMove(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"move", name:mePos.name, x:mePos.x, y:mePos.y})); }
-function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", name:mePos.name, equip:mePos.equip||{}, appearance: mePos.appearance||{}})); }
-function sendAppearance(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"appearance", name:mePos.name, appearance:mePos.appearance||{}})); }
+function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", name:mePos.name, equip:mePos.equip||{}, appearance: hydrateAppearance(mePos.appearance)})); }
+function sendAppearance(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"appearance", name:mePos.name, appearance:hydrateAppearance(mePos.appearance)})); }
 
 // Coins button in modal
 document.addEventListener("click",(e)=>{ if(e.target && e.target.id==="claim") claimCoins(); });
@@ -252,8 +359,14 @@ document.addEventListener("click",(e)=>{ if(e.target && e.target.id==="claim") c
 (async function(){
   try{
     const ap = await api("/api/appearance?username="+encodeURIComponent(username));
-    myAppearance = ap || JSON.parse(localStorage.getItem("cp_appearance")||"{}") || {};
-    mePos.appearance = myAppearance;
-  }catch(e){}
+    if(ap){
+      myAppearance = hydrateAppearance(ap);
+      mePos.appearance = Object.assign({}, myAppearance);
+      localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+    }
+  }catch(e){
+    mePos.appearance = Object.assign({}, myAppearance);
+  }
+  renderEmotionPanel();
   await refreshMe(); await loadOnline(); await loadInventory(); await refreshAvatar(); drawStage(); connectWS();
-})(); 
+})();
