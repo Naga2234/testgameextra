@@ -29,34 +29,34 @@ async function refreshMe(){
   const me=await api("/api/me?username="+encodeURIComponent(username));
   document.querySelectorAll("#coins").forEach(el=>el.textContent=me.coins);
 }
-let incomeTimerId=null, leftSec=300;
-function setClaimEnabled(en){
-  const btn=document.getElementById("claim"); if(!btn) return;
-  btn.disabled = !en;
-  btn.style.opacity = en ? "1" : ".6";
-}
+let incomeTimerId=null, incomeSyncId=null, leftSec=300;
 function renderIncomeTimer(){
   const el=document.getElementById("income-timer"); if(!el) return;
-  if(leftSec<=0){ el.textContent="⏳ готово"; setClaimEnabled(true); return; }
-  setClaimEnabled(false);
-  const m=String(Math.floor(leftSec/60)).padStart(2,'0');
-  const s=String(leftSec%60).padStart(2,'0');
+  const value=Math.max(0, Math.floor(leftSec));
+  const m=String(Math.floor(value/60)).padStart(2,'0');
+  const s=String(value%60).padStart(2,'0');
   el.textContent=`⏳ ${m}:${s}`;
 }
-async function initIncomeTimer(){
+async function syncIncomeLeft(){
   try{
     const j=await api("/api/income_left?username="+encodeURIComponent(username));
-    leftSec = (typeof j.left==="number") ? j.left : 300;
-  }catch(e){ leftSec=300; }
+    if(typeof j.left==="number") leftSec = j.left;
+    if(j.granted) await refreshMe();
+  }catch(e){ /* ignore */ }
   renderIncomeTimer();
-  if(incomeTimerId) clearInterval(incomeTimerId);
-  incomeTimerId=setInterval(()=>{ if(leftSec>0){ leftSec--; renderIncomeTimer(); } },1000);
 }
-async function claimCoins(){
-  const f=new FormData(); f.append("username",username);
-  const j=await api("/api/claim_income","POST",f);
-  if(!j.ok){ await initIncomeTimer(); alert("Подождите ещё: "+(j.left||0)+" сек."); return; }
-  await refreshMe(); await initIncomeTimer();
+async function initIncomeTimer(){
+  await syncIncomeLeft();
+  if(incomeTimerId) clearInterval(incomeTimerId);
+  incomeTimerId=setInterval(()=>{
+    if(leftSec>0){
+      leftSec--; renderIncomeTimer();
+    }else{
+      syncIncomeLeft();
+    }
+  },1000);
+  if(incomeSyncId) clearInterval(incomeSyncId);
+  incomeSyncId=setInterval(syncIncomeLeft,15000);
 }
 
 // Online overlay

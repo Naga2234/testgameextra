@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from typing import Dict, Any
-import time, hashlib, random
+import time, hashlib, random, math
 
 INCOME_PERIOD = 300  # 5 минут
 INCOME_AMOUNT = 50
@@ -68,7 +68,32 @@ def ensure_user(u: str, gender: str = "other", appearance: dict | None = None):
         }
         STATE["inv"][u] = [dict(x) for x in DEFAULT_INV]
         STATE["positions"][u] = {"x": 520, "y": 340}
-        STATE["last_income"][u] = 0
+        STATE["last_income"][u] = time.time()
+
+
+def apply_passive_income(username: str) -> bool:
+    """Начисляет пассивный доход за завершённые циклы.
+
+    Возвращает True, если монеты были начислены.
+    """
+    ensure_user(username)
+    now = time.time()
+    last = STATE["last_income"].get(username)
+    if last is None:
+        STATE["last_income"][username] = now
+        return False
+
+    elapsed = now - last
+    if elapsed < INCOME_PERIOD:
+        return False
+
+    cycles = int(elapsed // INCOME_PERIOD)
+    if cycles <= 0:
+        return False
+
+    STATE["users"][username]["coins"] += cycles * INCOME_AMOUNT
+    STATE["last_income"][username] = last + cycles * INCOME_PERIOD
+    return True
 
 def current_slots(u: str):
     equip = {}
@@ -138,6 +163,7 @@ async def api_login(username: str = Form(...), password: str = Form(...)):
 @app.get("/api/me")
 async def me(username: str):
     ensure_user(username)
+    apply_passive_income(username)
     return {"username": username, "coins": STATE["users"][username]["coins"]}
 
 @app.get("/api/appearance")
@@ -171,23 +197,22 @@ async def save_appearance(
 @app.get("/api/income_left")
 async def income_left(username: str):
     ensure_user(username)
+    granted = apply_passive_income(username)
     now = time.time()
-    last = STATE["last_income"].get(username, 0)
-    left = max(0, INCOME_PERIOD - int(now - last))
-    return {"left": left, "period": INCOME_PERIOD, "amount": INCOME_AMOUNT}
+    last = STATE["last_income"].get(username, now)
+    left = max(0, math.ceil(INCOME_PERIOD - (now - last)))
+    return {"left": left, "period": INCOME_PERIOD, "amount": INCOME_AMOUNT, "granted": granted}
 
 @app.post("/api/claim_income")
 async def claim_income(username: str = Form(...)):
     ensure_user(username)
+    granted = apply_passive_income(username)
+    if granted:
+        await broadcast({"type": "coins", "name": username})
     now = time.time()
-    last = STATE["last_income"].get(username, 0)
-    delta = now - last
-    if delta < INCOME_PERIOD:
-        return {"ok": False, "left": int(INCOME_PERIOD - delta)}
-    STATE["last_income"][username] = now
-    STATE["users"][username]["coins"] += INCOME_AMOUNT
-    await broadcast({"type": "coins", "name": username})
-    return {"ok": True}
+    last = STATE["last_income"].get(username, now)
+    left = max(0, math.ceil(INCOME_PERIOD - (now - last)))
+    return {"ok": True, "granted": granted, "left": left, "coins": STATE["users"][username]["coins"]}
 
 @app.get("/api/shop")
 async def api_shop():
@@ -196,6 +221,7 @@ async def api_shop():
 @app.post("/api/buy")
 async def api_buy(username: str = Form(...), item_id: int = Form(...)):
     ensure_user(username)
+    apply_passive_income(username)
     item = next((x for x in STATE["shop"] if x["id"] == int(item_id)), None)
     if not item:
         return {"ok": False, "error": "Товар не найден"}
