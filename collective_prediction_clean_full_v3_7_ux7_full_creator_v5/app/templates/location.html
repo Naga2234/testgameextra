@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Локация — КП</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">Коллективное Предсказание</div>
+  <div class="me">
+    <button class="ghost" id="btn-character">Персонаж</button>
+    <button class="ghost" id="btn-shop">Магазин</button>
+    <span id="u-gender" class="gender-ico">⚧</span>
+    <span id="u-name">{{ username }}</span>
+  </div>
+</header>
+
+<main class="mur-layout vertical">
+  <section class="mur-stage">
+    <div class="stage-wrap">
+      <canvas id="stage" width="1100" height="460"></canvas>
+      <div class="overlay online" id="online-overlay"></div>
+      <div class="arrows">
+        <button id="go-left" class="arrow">◀</button>
+        <button id="go-right" class="arrow">▶</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mur-chat wide">
+    <h3>Чат</h3>
+    <div class="chat-log" id="chat-log"></div>
+    <div class="chat-input borderless">
+      <input id="msg" placeholder="Сообщение...">
+      <button id="send">Сказать</button>
+    </div>
+  </section>
+</main>
+
+<div class="modal" id="char-modal" hidden>
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="title">Персонаж</div>
+      <button class="ghost close" id="char-close">✕</button>
+    </div>
+    <div class="char-grid">
+      <div class="char-preview">
+        <canvas id="char-canvas" width="280" height="280"></canvas>
+        <div class="coins-line">
+          Монеты: <b id="coins">...</b>
+          <button id="claim">+50/5мин</button>
+          <span id="income-timer" class="countdown">⏳ 05:00</span>
+        </div>
+        <div class="equipped" id="equipped-list"></div>
+      </div>
+      <div class="char-inventory">
+        <h3>Инвентарь</h3>
+        <div class="slot-bar">
+          <div class="slot" data-slot="head" data-label="Голова">Голова</div>
+          <div class="slot" data-slot="upper" data-label="Верх">Верх</div>
+          <div class="slot" data-slot="lower" data-label="Низ">Низ</div>
+          <div class="slot" data-slot="cloak" data-label="Плащ">Плащ</div>
+          <div class="slot" data-slot="shoes" data-label="Обувь">Обувь</div>
+          <div class="slot" data-slot="accessory" data-label="Аксессуар">Аксессуар</div>
+        </div>
+        <div id="inventory" class="inventory-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="shop-modal" hidden>
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="title">Магазин</div>
+      <button class="ghost close" id="shop-close">✕</button>
+    </div>
+    <div id="shop" class="inventory-grid"></div>
+  </div>
+</div>
+
+<script src="/static/js/location.js"></script>
+</body>
+</html>

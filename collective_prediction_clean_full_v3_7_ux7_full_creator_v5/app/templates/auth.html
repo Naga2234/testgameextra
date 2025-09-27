@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Регистрация — КП</title>
+  <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body class="auth-body">
+  <div class="auth-card modern big">
+    <div class="logo">🔮</div>
+    <h1>Коллективное Предсказание</h1>
+    <p class="muted">Создайте героя — и сразу в локацию</p>
+
+    <div class="tabs">
+      <button class="tab" data-tab="login">Вход</button>
+      <button class="tab active" data-tab="register">Регистрация</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div class="panel" id="panel-login">
+      <div class="row">
+        <label class="lbl">Имя игрока</label>
+        <input id="l-username" placeholder="минимум 3 символа" autocomplete="username">
+        <div class="hint" id="l-u-err"></div>
+      </div>
+      <div class="row pw">
+        <label class="lbl">Пароль</label>
+        <div class="pw-wrap">
+          <input id="l-password" type="password" placeholder="минимум 6 символов" autocomplete="current-password">
+          <button class="pw-eye" type="button" data-for="l-password">👁</button>
+        </div>
+        <div class="hint" id="l-p-err"></div>
+      </div>
+      <div class="actions">
+        <button id="btn-login" class="primary">Войти</button>
+      </div>
+    </div>
+
+    <!-- REGISTER with curated palettes & hairstyles -->
+    <div class="panel active" id="panel-register">
+      <div class="creator">
+        <div class="creator-left">
+          <div class="row">
+            <span class="lbl">Пол</span>
+            <label><input type="radio" name="gender" value="male"> Мужской</label>
+            <label><input type="radio" name="gender" value="female"> Женский</label>
+            <label><input type="radio" name="gender" value="other" checked> Не определился</label>
+          </div>
+
+          <div class="row grid2">
+            <div>
+              <label class="lbl">Имя игрока</label>
+              <input id="r-username" placeholder="минимум 3 символа" autocomplete="username">
+              <div class="hint" id="r-u-err"></div>
+            </div>
+            <div class="pw">
+              <label class="lbl">Пароль</label>
+              <div class="pw-wrap">
+                <input id="r-password" type="password" placeholder="минимум 6 символов" autocomplete="new-password">
+                <button class="pw-eye" type="button" data-for="r-password">👁</button>
+              </div>
+              <div class="hint" id="r-p-err"></div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="hint-row">
+              <label class="lbl">Цвет кожи</label>
+              <span class="small-muted">натуральная палитра</span>
+            </div>
+            <div id="skin-sw" class="swatch-row"></div>
+          </div>
+
+          <div class="row">
+            <div class="hint-row">
+              <label class="lbl">Цвет глаз</label>
+              <span class="small-muted">реалистичные оттенки</span>
+            </div>
+            <div id="eyes-sw" class="swatch-row"></div>
+          </div>
+
+          <div class="row">
+            <div class="hint-row">
+              <label class="lbl">Цвет волос</label>
+              <span class="small-muted">естественные цвета</span>
+            </div>
+            <div id="hair-sw" class="swatch-row"></div>
+          </div>
+
+          <div class="row">
+            <label class="lbl">Причёска</label>
+            <div id="styles-wrap" class="select-inline"></div>
+          </div>
+
+          <div class="actions">
+            <button id="btn-register" class="primary">Создать аккаунт</button>
+          </div>
+        </div>
+
+        <div class="creator-right">
+          <canvas id="preview" width="260" height="260"></canvas>
+          <div class="muted small">Превью персонажа</div>
+        </div>
+      </div>
+    </div>
+
+    <p id="err" class="error"></p>
+  </div>
+
+<script>
+// Helpers
+async function api(url, method="GET", body=null){
+  const opt={method};
+  if(body instanceof FormData){ opt.body=body; }
+  else if(body){ opt.headers={"Content-Type":"application/json"}; opt.body=JSON.stringify(body); }
+  const r=await fetch(url,opt); return r.json();
+}
+function switchTab(id){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===id));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active', p.id==='panel-'+id));
+  document.getElementById('err').textContent='';
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+document.querySelectorAll('.pw-eye').forEach(btn=>btn.addEventListener('click',()=>{
+  const id=btn.getAttribute('data-for'); const el=document.getElementById(id);
+  el.type = (el.type==='password'?'text':'password');
+}));
+
+function genderValue(){ const el=[...document.querySelectorAll('input[name="gender"]')].find(e=>e.checked); return el?el.value:"other"; }
+function validateUser(name){ return (name||'').trim().length>=3; }
+function validatePass(p){ return (p||'').length>=6; }
+
+// Palettes
+const SKINS=['#f1c7a3','#d39a70','#9c613f'];
+const EYES=['#2b4c7e','#2f6b3c','#1e1e1e'];
+const HAIRS=['#1e1e1e','#6b4f2f','#a37d58'];
+
+// Hairstyles catalog by gender
+const STYLES = {
+  male: ["short","fade","buzz","undercut","mohawk","curly","afro","ponytail"],
+  female: ["pixie","bob","long","curly","bun","braids","afro","ponytail"],
+  other: ["short","pixie","bob","long","curly","afro","braids","mohawk","ponytail"]
+};
+
+// State
+let state = {
+  skin: SKINS[1],
+  hair: HAIRS[0],
+  eyes: EYES[0],
+  style: "short"
+};
+
+// Build swatches
+function makeSwatches(id, arr, cls){
+  const box=document.getElementById(id); box.innerHTML="";
+  arr.forEach((val,i)=>{
+    const d=document.createElement('div'); d.className='swatch '+(cls||'');
+    d.style.background=val; d.dataset.val=val; d.dataset.selected = (i===0?0:0);
+    d.addEventListener('click',()=>{
+      box.querySelectorAll('.swatch').forEach(s=>s.dataset.selected=0);
+      d.dataset.selected=1;
+      if(id==='skin-sw') state.skin=val;
+      if(id==='eyes-sw') state.eyes=val;
+      if(id==='hair-sw') state.hair=val;
+      redrawPreview();
+    });
+    box.appendChild(d);
+  });
+  // select current
+  let first=box.querySelector('.swatch'); if(first){ first.click(); }
+}
+function makeStyles(){
+  const g=genderValue();
+  const list=STYLES[g]||STYLES.other;
+  const box=document.getElementById('styles-wrap'); box.innerHTML="";
+  list.forEach((name, i)=>{
+    const b=document.createElement('button'); b.type='button'; b.className='badge'; b.textContent=hairLabel(name);
+    b.dataset.val=name;
+    b.addEventListener('click',()=>{
+      box.querySelectorAll('.badge').forEach(x=>x.dataset.selected=0);
+      b.dataset.selected=1; state.style=name; redrawPreview();
+    });
+    if(i===0) b.dataset.selected=1;
+    box.appendChild(b);
+  });
+}
+['male','female','other'].forEach(v=>{
+  document.querySelector('input[name="gender"][value="'+v+'"]').addEventListener('change',()=>makeStyles());
+});
+
+// Preview drawing
+const pv=document.getElementById('preview'), pctx=pv.getContext('2d');
+function hairLabel(style){
+  const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",mohawk:"Ирокез",
+             curly:"Кудри",afro:"Афро",ponytail:"Хвост",pixie:"Пикси",bob:"Каре",long:"Длинные",
+             bun:"Пучок",braids:"Косы"};
+  return map[style]||style;
+}
+function drawHair(ctx, style, color, cx, top){
+  ctx.fillStyle=color;
+  if(style==="short"){ ctx.fillRect(cx-46, top-6, 92, 24); }
+  else if(style==="fade"){ ctx.fillRect(cx-46, top, 92, 18); ctx.clearRect(cx-46, top+14, 92, 6); }
+  else if(style==="buzz"){ ctx.fillRect(cx-46, top+4, 92, 12); }
+  else if(style==="undercut"){ ctx.fillRect(cx-46, top-4, 92, 26); ctx.clearRect(cx-46, top+18, 92, 12); }
+  else if(style==="mohawk"){ ctx.fillRect(cx-8, top-12, 16, 40); }
+  else if(style==="curly"){ for(let i=0;i<12;i++){ ctx.beginPath(); ctx.arc(cx-48+i*8, top+10+(i%2?0:6), 8, 0, Math.PI*2); ctx.fill(); } }
+  else if(style==="afro"){ ctx.beginPath(); ctx.arc(cx, top+18, 48, 0, Math.PI*2); ctx.fill(); }
+  else if(style==="ponytail"){ ctx.fillRect(cx-44, top, 88, 22); ctx.fillRect(cx+36, top+10, 14, 40); }
+  else if(style==="pixie"){ ctx.fillRect(cx-40, top-2, 80, 18); ctx.clearRect(cx-40, top+12, 80, 10); }
+  else if(style==="bob"){ ctx.beginPath(); ctx.arc(cx, top+26, 48, Math.PI, 0); ctx.fill(); }
+  else if(style==="long"){ ctx.fillRect(cx-44, top, 88, 70); }
+  else if(style==="bun"){ ctx.beginPath(); ctx.arc(cx, top, 16, 0, Math.PI*2); ctx.fill(); ctx.fillRect(cx-44, top+6, 88, 18); }
+  else if(style==="braids"){ for(let i=0;i<4;i++){ ctx.fillRect(cx-36+i*18, top, 12, 56); } }
+  else { ctx.fillRect(cx-44, top, 88, 22); }
+}
+function redrawPreview(){
+  pctx.clearRect(0,0,pv.width,pv.height);
+  const cx=pv.width/2, top=70;
+  // body
+  pctx.fillStyle=state.skin;
+  pctx.beginPath(); pctx.arc(cx, top, 36, 0, Math.PI*2); pctx.fill();
+  pctx.fillRect(cx-26, top+38, 52, 78);
+  // eyes
+  pctx.fillStyle=state.eyes; pctx.beginPath(); pctx.arc(cx-12, top, 5, 0, Math.PI*2); pctx.fill(); pctx.beginPath(); pctx.arc(cx+12, top, 5, 0, Math.PI*2); pctx.fill();
+  // hair
+  drawHair(pctx, state.style, state.hair, cx, top-24);
+}
+makeSwatches('skin-sw', SKINS, 'skin');
+makeSwatches('eyes-sw', EYES, 'eyes');
+makeSwatches('hair-sw', HAIRS, 'hair');
+makeStyles(); redrawPreview();
+
+// Submit
+async function doRegister(){
+  const u=document.getElementById('r-username').value.trim();
+  const p=document.getElementById('r-password').value;
+  document.getElementById('r-u-err').textContent = validateUser(u)?'':'минимум 3 символа';
+  document.getElementById('r-p-err').textContent = validatePass(p)?'':'минимум 6 символов';
+  if(!validateUser(u)||!validatePass(p)) return;
+
+  // if other — небольшая рандомизация в рамках палитры
+  let g=genderValue();
+  const st=state;
+  if(g==='other'){
+    st.skin = SKINS[Math.floor(Math.random()*SKINS.length)];
+    st.hair = HAIRS[Math.floor(Math.random()*HAIRS.length)];
+    st.eyes = EYES[Math.floor(Math.random()*EYES.length)];
+    const list=STYLES.other; st.style=list[Math.floor(Math.random()*list.length)];
+    redrawPreview();
+  }
+
+  const f=new FormData();
+  f.append('username', u);
+  f.append('password', p);
+  f.append('gender', g);
+  f.append('skin', st.skin);
+  f.append('hair', st.hair);
+  f.append('eyes', st.eyes);
+  f.append('style', st.style);
+
+  const j=await (await fetch('/api/register',{method:'POST',body:f})).json();
+  if(!j.ok){ document.getElementById('err').textContent=j.error||'Ошибка'; return; }
+  localStorage.setItem('cp_username', j.username);
+  localStorage.setItem('cp_gender', j.gender||'other');
+  localStorage.setItem('cp_appearance', JSON.stringify(j.appearance||state));
+  try{
+    const a=new FormData(); a.append('username', j.username);
+    a.append('skin', state.skin); a.append('hair', state.hair); a.append('eyes', state.eyes); a.append('style', state.style);
+    await fetch('/api/appearance',{method:'POST', body:a});
+  }catch(e){}
+  location.href='/?username='+encodeURIComponent(j.username);
+}
+
+// Login
+async function doLogin(){
+  const u=document.getElementById('l-username').value.trim();
+  const p=document.getElementById('l-password').value;
+  document.getElementById('l-u-err').textContent = validateUser(u)?'':'минимум 3 символа';
+  document.getElementById('l-p-err').textContent = validatePass(p)?'':'минимум 6 символов';
+  if(!validateUser(u)||!validatePass(p)) return;
+
+  const f=new FormData(); f.append('username',u); f.append('password',p);
+  const j=await (await fetch('/api/login',{method:'POST',body:f})).json();
+  if(!j.ok){ document.getElementById('err').textContent=j.error||'Ошибка'; return; }
+  localStorage.setItem('cp_username', j.username);
+  localStorage.setItem('cp_gender', j.gender||'other');
+  localStorage.setItem('cp_appearance', JSON.stringify(j.appearance||state));
+  try{
+    const a=new FormData(); a.append('username', j.username);
+    a.append('skin', state.skin); a.append('hair', state.hair); a.append('eyes', state.eyes); a.append('style', state.style);
+    await fetch('/api/appearance',{method:'POST', body:a});
+  }catch(e){}
+  location.href='/?username='+encodeURIComponent(j.username);
+}
+
+document.getElementById('btn-register').addEventListener('click', doRegister);
+document.getElementById('btn-login').addEventListener('click', doLogin);
+
+// auto-select tab from URL
+(function(){ 
+  const params=new URLSearchParams(location.search);
+  const mode=params.get('mode');
+  if(mode==='login'){ switchTab('login'); } else { switchTab('register'); }
+})();
+</script>
+</body>
+</html>
