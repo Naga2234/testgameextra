@@ -6,8 +6,15 @@ async function api(url, method="GET", body=null){
   const r=await fetch(url,opt); return r.json();
 }
 const username=(new URL(location.href)).searchParams.get("username")||localStorage.getItem("cp_username")||"Гость";
+let myGender=localStorage.getItem("cp_gender")||"other";
 document.getElementById("u-name").textContent=username;
-document.getElementById("u-gender").textContent=(localStorage.getItem("cp_gender")||"other")==="male"?"♂":((localStorage.getItem("cp_gender")||"other")==="female"?"♀":"⚧");
+function updateGenderBadge(value){
+  const ico=document.getElementById("u-gender");
+  if(!ico) return;
+  const g=value||myGender||"other";
+  ico.textContent=g==="male"?"♂":(g==="female"?"♀":"⚧");
+}
+updateGenderBadge(myGender);
 
 // ---- SCALE / FONT ----
 const SCALE_SCENE = 2.4;
@@ -23,6 +30,11 @@ const EMOTIONS = [
   {value:'surprised',label:'Удивлён',icon:'😯'},
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
+const GENDER_OUTFITS={
+  male:{primary:'#3a6ea5',secondary:'#2e4f79',accent:'#1f2f57'},
+  female:{primary:'#f19ad9',secondary:'#d16ec7',accent:'#ffd6ef'},
+  other:{primary:'#4c8fca',secondary:'#3a6aa3',accent:'#9fd9ff'}
+};
 
 const ITEM_TYPE_LABELS = {
   head: 'Голова',
@@ -339,6 +351,8 @@ function drawExpressionMini(ctx2, emotion, cx, cy, eyesColor, scale){
 
 function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const app = hydrateAppearance(p.appearance);
+  const genderKey = p.gender || (p.name===username ? (mePos.gender || myGender) : null) || myGender || 'other';
+  const outfit = GENDER_OUTFITS[genderKey] || GENDER_OUTFITS.other;
   const skin = app.skin;
   const hair = app.hair;
   const eyes = app.eyes;
@@ -346,13 +360,81 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const emotion = app.emotion;
 
   const bx=p.x-18*scale, by=p.y-24*scale;
+  const torsoX = bx+8*scale;
+  const torsoY = by+20*scale;
+  const torsoWidth = 20*scale;
+  const torsoHeight = 28*scale;
+  const hasUpper = !!(p.equip && p.equip.upper);
+  const hasLower = !!(p.equip && p.equip.lower);
+
   drawShadowMini(ctx2, p.x, p.y+18*scale, scale*0.9);
   if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
+
+  ctx2.fillStyle=skin;
+  if(genderKey==='female'){
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX, torsoY+2*scale);
+    ctx2.lineTo(torsoX+torsoWidth, torsoY+2*scale);
+    ctx2.lineTo(torsoX+torsoWidth-4*scale, torsoY+torsoHeight);
+    ctx2.lineTo(torsoX+4*scale, torsoY+torsoHeight);
+    ctx2.closePath();
+    ctx2.fill();
+  }else{
+    ctx2.fillRect(torsoX, torsoY, torsoWidth, torsoHeight);
+  }
+
+  if(!hasUpper){
+    if(genderKey==='female'){
+      const grad=ctx2.createLinearGradient(torsoX, torsoY, torsoX, torsoY+torsoHeight);
+      grad.addColorStop(0, outfit.primary);
+      grad.addColorStop(1, outfit.secondary);
+      ctx2.fillStyle=grad;
+      ctx2.beginPath();
+      ctx2.moveTo(torsoX-2*scale, torsoY+4*scale);
+      ctx2.lineTo(torsoX+torsoWidth+2*scale, torsoY+4*scale);
+      ctx2.lineTo(torsoX+torsoWidth-5*scale, torsoY+torsoHeight-2*scale);
+      ctx2.lineTo(torsoX+5*scale, torsoY+torsoHeight-2*scale);
+      ctx2.closePath();
+      ctx2.fill();
+      ctx2.fillStyle=outfit.accent;
+      ctx2.fillRect(torsoX+2*scale, torsoY+torsoHeight*0.55, torsoWidth-4*scale, 2.6*scale);
+      ctx2.fillStyle=outfit.primary;
+      ctx2.beginPath();
+      ctx2.ellipse(torsoX-1*scale, torsoY+8*scale, 3*scale, 5*scale, 0, 0, Math.PI*2);
+      ctx2.ellipse(torsoX+torsoWidth+1*scale, torsoY+8*scale, 3*scale, 5*scale, 0, 0, Math.PI*2);
+      ctx2.fill();
+    }else{
+      ctx2.fillStyle=outfit.primary;
+      ctx2.fillRect(torsoX, torsoY+2*scale, torsoWidth, 13*scale);
+      ctx2.fillStyle=outfit.accent;
+      ctx2.fillRect(torsoX, torsoY+12*scale, torsoWidth, 2*scale);
+    }
+  }
+
+  if(!hasLower){
+    ctx2.fillStyle=outfit.secondary;
+    if(genderKey==='female'){
+      ctx2.fillRect(torsoX+4*scale, torsoY+torsoHeight-10*scale, torsoWidth-8*scale, 8*scale);
+    }else{
+      ctx2.fillRect(torsoX+1*scale, torsoY+14*scale, torsoWidth-2*scale, 12*scale);
+    }
+  }
+
   if(p.equip && p.equip.lower){ ctx2.fillStyle="#2e4f79"; ctx2.fillRect(bx+4*scale,by+24*scale,28*scale,16*scale); }
   if(p.equip && p.equip.upper){ ctx2.fillStyle="#3a6ea5"; ctx2.fillRect(bx+4*scale,by+18*scale,28*scale,16*scale); }
-  ctx2.fillStyle=skin; ctx2.fillRect(bx+8*scale,by+20*scale,20*scale,28*scale);
-  if(p.equip && p.equip.shoes){ ctx2.fillStyle="#263b57"; ctx2.fillRect(bx+4*scale,by+40*scale,28*scale,6*scale); }
-  ctx2.fillStyle=skin; ctx2.fillRect(bx+12*scale,by+4*scale,12*scale,12*scale);
+
+  if(p.equip && p.equip.shoes){
+    ctx2.fillStyle="#263b57";
+    ctx2.fillRect(bx+4*scale,by+40*scale,28*scale,6*scale);
+  }else{
+    const shoeColor = genderKey==='female' ? '#b373d6' : (genderKey==='other' ? '#326b86' : '#263b57');
+    ctx2.fillStyle=shoeColor;
+    ctx2.fillRect(bx+6*scale,by+40*scale,24*scale,5*scale);
+  }
+
+  ctx2.fillStyle=skin;
+  ctx2.fillRect(bx+12*scale,by+4*scale,12*scale,12*scale);
+
   ctx2.fillStyle=hair;
   if(style==="short"){ ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); }
   else if(style==="fade"){ ctx2.fillRect(bx+10*scale,by+3*scale,16*scale,5*scale); }
@@ -423,7 +505,7 @@ async function persistAppearance(){
 // Stage rendering
 const stage=document.getElementById("stage"), ctx=stage.getContext("2d");
 const charCanvas=document.getElementById("char-canvas"), cctx=charCanvas.getContext("2d");
-let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance)},
+let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
     others={};
 
 function drawStage(){
@@ -434,7 +516,7 @@ function drawStage(){
 }
 function drawCharPreview(){
   cctx.clearRect(0,0,charCanvas.width,charCanvas.height);
-  const p={name:username,x:charCanvas.width/2,y:charCanvas.height/2+40,equip:mePos.equip,appearance:mePos.appearance};
+  const p={name:username,x:charCanvas.width/2,y:charCanvas.height/2+40,equip:mePos.equip,appearance:mePos.appearance,gender:mePos.gender||myGender};
   drawMiniOn(cctx, p, SCALE_PREVIEW, false);
 }
 document.getElementById("go-left").addEventListener("click", ()=>{ mePos.x=Math.max(40, mePos.x-30); sendMove(); drawStage(); });
@@ -447,6 +529,12 @@ async function refreshAvatar(){
   mePos.appearance = Object.assign({}, normalized);
   myAppearance = Object.assign({}, normalized);
   localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+  if(typeof st.gender === 'string'){
+    mePos.gender = st.gender;
+    myGender = st.gender;
+    localStorage.setItem('cp_gender', myGender);
+    updateGenderBadge(myGender);
+  }
   renderEmotionPanel();
   drawStage(); drawCharPreview(); sendState(); sendAppearance();
 }
@@ -470,18 +558,24 @@ function connectWS(){
         mePos.appearance = hydrateAppearance(d.me.appearance || mePos.appearance);
         myAppearance = Object.assign({}, mePos.appearance);
         localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+        if(typeof d.me.gender === 'string'){
+          mePos.gender = d.me.gender;
+          myGender = d.me.gender;
+          localStorage.setItem('cp_gender', myGender);
+          updateGenderBadge(myGender);
+        }
         renderEmotionPanel();
       }
       others={};
       (d.players||[]).forEach(p=>{
         if(p.name===mePos.name) return;
-        others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance)};
+        others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance),gender:p.gender||'other'};
       });
       drawStage(); drawCharPreview();
     }
-    else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:hydrateAppearance({})}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
-    else if(d.type==="state"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({})}); others[d.name].equip=d.equip||{}; if(d.appearance) others[d.name].appearance=hydrateAppearance(d.appearance); drawStage(); }
-    else if(d.type==="appearance"){ if(d.name===mePos.name){ mePos.appearance=hydrateAppearance(d.appearance||mePos.appearance); myAppearance=Object.assign({}, mePos.appearance); localStorage.setItem('cp_appearance', JSON.stringify(myAppearance)); renderEmotionPanel(); drawStage(); drawCharPreview(); return; } (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({})}); others[d.name].appearance=hydrateAppearance(d.appearance); drawStage(); }
+    else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
+    else if(d.type==="state"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].equip=d.equip||{}; if(d.appearance) others[d.name].appearance=hydrateAppearance(d.appearance); if(typeof d.gender==='string') others[d.name].gender=d.gender; drawStage(); }
+    else if(d.type==="appearance"){ if(d.name===mePos.name){ mePos.appearance=hydrateAppearance(d.appearance||mePos.appearance); myAppearance=Object.assign({}, mePos.appearance); localStorage.setItem('cp_appearance', JSON.stringify(myAppearance)); if(typeof d.gender==='string'){ mePos.gender=d.gender; myGender=d.gender; localStorage.setItem('cp_gender', myGender); updateGenderBadge(myGender); } renderEmotionPanel(); drawStage(); drawCharPreview(); return; } (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].appearance=hydrateAppearance(d.appearance); if(typeof d.gender==='string') others[d.name].gender=d.gender; drawStage(); }
     else if(d.type==="coins"){ if(d.name===mePos.name){ refreshMe(); } }
     else if(d.type==="system"){ sys(d.text); loadOnline(); }
   }catch(e){ console.error(e); } };
