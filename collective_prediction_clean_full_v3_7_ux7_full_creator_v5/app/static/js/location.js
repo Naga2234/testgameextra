@@ -239,11 +239,41 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   }
 }
 
+function updateEmotionScrollHints(panel){
+  if(!panel) return;
+  const scroller=panel.closest('.emotion-scroller');
+  if(!scroller) return;
+  const maxScroll=panel.scrollWidth-panel.clientWidth;
+  if(maxScroll<=1){
+    scroller.classList.remove('show-left','show-right');
+    return;
+  }
+  const left=panel.scrollLeft;
+  scroller.classList.toggle('show-left', left>1);
+  scroller.classList.toggle('show-right', left<maxScroll-1);
+}
+
+function ensureEmotionScrollListener(panel){
+  if(!panel || panel.dataset.scrollBound) return;
+  panel.addEventListener('scroll', ()=>updateEmotionScrollHints(panel), {passive:true});
+  panel.dataset.scrollBound='1';
+}
+
+function centerEmotionSelection(panel, target){
+  if(!panel || !target) return;
+  const maxScroll=Math.max(0, panel.scrollWidth-panel.clientWidth);
+  if(maxScroll<=0) return;
+  const offset=target.offsetLeft-((panel.clientWidth-target.offsetWidth)/2);
+  const next=Math.min(maxScroll, Math.max(0, offset));
+  panel.scrollLeft=next;
+}
+
 function renderEmotionPanel(){
   const panel=document.getElementById('emotion-panel');
   if(!panel) return;
   panel.innerHTML="";
   const current=(mePos.appearance&&mePos.appearance.emotion)||'smile';
+  ensureEmotionScrollListener(panel);
   EMOTIONS.forEach(em=>{
     const btn=document.createElement('button');
     btn.type='button';
@@ -251,6 +281,7 @@ function renderEmotionPanel(){
     btn.innerHTML=`<span class="emo-icon">${em.icon}</span><span>${em.label}</span>`;
     btn.dataset.val=em.value;
     btn.dataset.selected = em.value===current ? 1 : 0;
+    btn.style.scrollSnapAlign='center';
     btn.addEventListener('click', async ()=>{
       if(mePos.appearance?.emotion===em.value) return;
       panel.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
@@ -260,9 +291,16 @@ function renderEmotionPanel(){
       localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
       drawStage(); drawCharPreview(); sendAppearance();
       try{ await persistAppearance(); }catch(e){ console.warn(e); }
+      btn.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+      updateEmotionScrollHints(panel);
     });
     panel.appendChild(btn);
   });
+  const selected=panel.querySelector('[data-selected="1"]');
+  if(selected){
+    centerEmotionSelection(panel, selected);
+  }
+  requestAnimationFrame(()=>updateEmotionScrollHints(panel));
 }
 
 async function persistAppearance(){

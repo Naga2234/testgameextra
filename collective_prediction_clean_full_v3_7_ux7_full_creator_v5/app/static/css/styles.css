@@ -87,17 +87,45 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .swatch[data-selected="1"]{outline:3px solid #6aa2ff;outline-offset:2px}
 .swatch.hair,.swatch.eyes{border-color:rgba(0,0,0,.25)}
 .swatch.eyes{width:28px;height:28px;border-radius:999px;border-width:2px}
-.emotion-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
-.emotion-row.compact{gap:6px}
+.emotion-scroller{position:relative}
+.emotion-scroller::before,.emotion-scroller::after{content:"";position:absolute;top:0;bottom:0;width:28px;pointer-events:none;z-index:1;opacity:0;transition:opacity .2s}
+.emotion-scroller::before{left:0;background:linear-gradient(90deg,rgba(247,249,255,.95),rgba(247,249,255,0))}
+.emotion-scroller::after{right:0;background:linear-gradient(270deg,rgba(247,249,255,.95),rgba(247,249,255,0))}
+.emotion-scroller.show-left::before{opacity:1}
+.emotion-scroller.show-right::after{opacity:1}
+.emotion-row{display:flex;flex-wrap:nowrap;gap:10px;margin-top:6px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scroll-padding:0 14px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;padding:4px 2px 10px;scrollbar-width:none}
+.emotion-row::-webkit-scrollbar{display:none}
+.emotion-row.compact{gap:8px}
 .emotion-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;transition:transform .08s}
+.emotion-row .emotion-btn{flex:0 0 auto}
 .emotion-btn[data-selected="1"]{background:#5b8cff;border-color:#5b8cff;box-shadow:0 0 0 2px rgba(91,140,255,.35)}
 .emotion-btn:hover{transform:translateY(-1px)}
 .emo-icon{font-size:18px;line-height:1}
-.char-preview .emotion-row.compact .emotion-btn{flex:1;justify-content:center;padding:8px 10px;font-size:13px;border-color:#d6def3;background:#fff;color:#1e293b}
+.char-preview .emotion-row.compact .emotion-btn{flex:0 0 auto;justify-content:center;padding:8px 10px;font-size:13px;border-color:#d6def3;background:#fff;color:#1e293b}
 .char-preview .emotion-row.compact .emotion-btn[data-selected="1"]{background:#4f6ee6;border-color:#4f6ee6;color:#fff;box-shadow:0 8px 16px rgba(79,110,230,.25)}
 .char-preview .emotion-row.compact .emo-icon{font-size:16px}
+.emotion-scroller.show-left .emotion-row,.emotion-scroller.show-right .emotion-row{mask-image:linear-gradient(90deg,rgba(0,0,0,.1) 0,rgba(0,0,0,1) 20%,rgba(0,0,0,1) 80%,rgba(0,0,0,.1) 100%);-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.1) 0,rgba(0,0,0,1) 20%,rgba(0,0,0,1) 80%,rgba(0,0,0,.1) 100%)}
+.emotion-scroller.show-left:not(.show-right) .emotion-row{mask-image:linear-gradient(90deg,rgba(0,0,0,.1) 0,rgba(0,0,0,1) 30%,rgba(0,0,0,1) 100%);-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,.1) 0,rgba(0,0,0,1) 30%,rgba(0,0,0,1) 100%)}
+.emotion-scroller.show-right:not(.show-left) .emotion-row{mask-image:linear-gradient(90deg,rgba(0,0,0,1) 0,rgba(0,0,0,1) 70%,rgba(0,0,0,.1) 100%);-webkit-mask-image:linear-gradient(90deg,rgba(0,0,0,1) 0,rgba(0,0,0,1) 70%,rgba(0,0,0,.1) 100%)}
+.emotion-scroller:not(.show-left):not(.show-right) .emotion-row{mask-image:none;-webkit-mask-image:none}
+.emotion-row .emotion-btn:focus-visible{outline:2px solid rgba(91,140,255,.6);outline-offset:2px}
+.emotion-row .emotion-btn:active{transform:scale(.97)}
+.emotion-row .emotion-btn .emo-icon{flex:0 0 auto}
+.emotion-row .emotion-btn span:last-child{white-space:nowrap}
 .hint-row{display:flex;justify-content:space-between;gap:8px;align-items:center}
 .small-muted{font-size:12px;opacity:.85}
 .select-inline{display:flex;gap:8px;flex-wrap:wrap}
 .badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:6px 10px;cursor:pointer}
 .badge[data-selected="1"]{background:#5b8cff;border-color:#5b8cff}
+
+@media (max-width: 640px){
+  .emotion-row{gap:8px;padding:4px 2px 8px}
+  .emotion-row.compact{gap:6px}
+  .emotion-row .emotion-btn{padding:6px 10px;font-size:13px}
+  .emotion-row .emo-icon{font-size:16px}
+}
+
+@media (max-width: 480px){
+  .emotion-row .emotion-btn{padding:6px 9px;font-size:12px}
+  .emotion-row .emo-icon{font-size:15px}
+}
