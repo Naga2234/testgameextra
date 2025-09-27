@@ -47,32 +47,36 @@
     </div>
     <div class="char-grid">
       <div class="char-preview">
-        <canvas id="char-canvas" width="280" height="280"></canvas>
-        <div class="emotion-control">
-          <div class="hint-row">
-            <span class="lbl">Эмоция</span>
-            <span class="small-muted">настроение видно всем</span>
+        <div class="char-header">
+          <canvas id="char-canvas" width="280" height="280"></canvas>
+          <div class="emotion-control">
+            <div class="hint-row">
+              <span class="lbl">Эмоция</span>
+              <span class="small-muted">настроение видно всем</span>
+            </div>
+            <div id="emotion-panel" class="emotion-row compact"></div>
           </div>
-          <div id="emotion-panel" class="emotion-row compact"></div>
-        </div>
-        <div class="coins-line">
-          Монеты: <b id="coins">...</b>
-          <span class="auto-income-note">Автопополнение каждые 5 минут</span>
-          <span id="income-timer" class="countdown">⏳ 05:00</span>
+          <div class="coins-line">
+            Монеты: <b id="coins">...</b>
+            <span class="auto-income-note">Автопополнение каждые 5 минут</span>
+            <span id="income-timer" class="countdown">⏳ 05:00</span>
+          </div>
         </div>
         <div class="equipped" id="equipped-list"></div>
       </div>
       <div class="char-inventory">
         <h3>Инвентарь</h3>
-        <div class="slot-bar">
-          <div class="slot" data-slot="head" data-label="Голова">Голова</div>
-          <div class="slot" data-slot="upper" data-label="Верх">Верх</div>
-          <div class="slot" data-slot="lower" data-label="Низ">Низ</div>
-          <div class="slot" data-slot="cloak" data-label="Плащ">Плащ</div>
-          <div class="slot" data-slot="shoes" data-label="Обувь">Обувь</div>
-          <div class="slot" data-slot="accessory" data-label="Аксессуар">Аксессуар</div>
+        <div class="inventory-scroll">
+          <div class="slot-bar">
+            <div class="slot" data-slot="head" data-label="Голова">Голова</div>
+            <div class="slot" data-slot="upper" data-label="Верх">Верх</div>
+            <div class="slot" data-slot="lower" data-label="Низ">Низ</div>
+            <div class="slot" data-slot="cloak" data-label="Плащ">Плащ</div>
+            <div class="slot" data-slot="shoes" data-label="Обувь">Обувь</div>
+            <div class="slot" data-slot="accessory" data-label="Аксессуар">Аксессуар</div>
+          </div>
+          <div id="inventory" class="inventory-grid"></div>
         </div>
-        <div id="inventory" class="inventory-grid"></div>
       </div>
     </div>
   </div>
