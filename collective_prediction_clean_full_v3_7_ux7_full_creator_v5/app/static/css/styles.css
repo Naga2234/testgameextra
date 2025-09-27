@@ -102,6 +102,13 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .swatch.eyes{width:28px;height:28px;border-radius:999px;border-width:2px}
 .emotion-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
 .emotion-row.compact{gap:6px}
+#emotion-panel{position:relative;flex-wrap:nowrap;overflow-x:auto;padding:4px 0;scrollbar-width:none;-ms-overflow-style:none}
+#emotion-panel::-webkit-scrollbar{display:none}
+#emotion-panel::before,#emotion-panel::after{content:"";position:absolute;top:0;bottom:0;width:20px;pointer-events:none;opacity:0;transition:opacity .2s}
+#emotion-panel::before{left:0;background:linear-gradient(90deg,#f7f9ff 0%,rgba(247,249,255,0))}
+#emotion-panel::after{right:0;background:linear-gradient(270deg,#f7f9ff 0%,rgba(247,249,255,0))}
+#emotion-panel[data-scroll-left="1"]::before{opacity:1}
+#emotion-panel[data-scroll-right="1"]::after{opacity:1}
 .emotion-btn{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;transition:transform .08s}
 .emotion-btn[data-selected="1"]{background:#5b8cff;border-color:#5b8cff;box-shadow:0 0 0 2px rgba(91,140,255,.35)}
 .emotion-btn:hover{transform:translateY(-1px)}
