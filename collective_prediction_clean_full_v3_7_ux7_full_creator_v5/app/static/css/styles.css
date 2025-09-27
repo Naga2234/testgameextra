@@ -79,6 +79,7 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 @media (max-width: 640px){
   .char-grid{grid-template-columns:1fr}
   .creator{grid-template-columns:1fr}
+  .grid2{grid-template-columns:1fr;row-gap:12px}
 }
 
 /* --- Creator swatches --- */
