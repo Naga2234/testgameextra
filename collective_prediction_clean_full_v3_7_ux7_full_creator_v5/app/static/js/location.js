@@ -22,6 +22,7 @@ const SCALE_PREVIEW = 3.0;
 const NAME_BASE_PX = 12;
 const NAME_SCENE_PX = Math.round(NAME_BASE_PX * SCALE_SCENE) + 10;
 const NAME_PREVIEW_PX = Math.round(NAME_BASE_PX * SCALE_PREVIEW) + 10;
+const HEAD_RADIUS_BASE = 12;
 
 const EMOTIONS = [
   {value:'smile',label:'Улыбка',icon:'🙂'},
@@ -471,8 +472,7 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
     ctx2.fillRect(bx+6*scale,by+40*scale,24*scale,5*scale);
   }
 
-  const isLargePreview = !withName && scale >= SCALE_PREVIEW;
-  const headRadius = (isLargePreview ? 12 : 6) * scale;
+  const headRadius = HEAD_RADIUS_BASE * scale;
   const headCx = p.x;
   const headCy = by + 10*scale;
   drawHead(ctx2, headCx, headCy, headRadius, skin);
