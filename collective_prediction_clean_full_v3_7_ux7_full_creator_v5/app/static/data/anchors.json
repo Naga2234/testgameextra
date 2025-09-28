@@ -1,0 +1,109 @@
+{
+  "body": {
+    "width": 36,
+    "height": 60,
+    "baseline": 45,
+    "origin": {
+      "x": 0,
+      "y": 0
+    }
+  },
+  "slots": {
+    "head": {
+      "x": 18,
+      "y": 10,
+      "width": 12,
+      "height": 12,
+      "pivotX": 6,
+      "pivotY": 6
+    },
+    "hair": {
+      "x": 18,
+      "y": 6,
+      "width": 18,
+      "height": 20,
+      "pivotX": 9,
+      "pivotY": 8
+    },
+    "eyes": {
+      "x": 18,
+      "y": 12,
+      "width": 14,
+      "height": 6,
+      "pivotX": 7,
+      "pivotY": 3
+    },
+    "torso": {
+      "x": 8,
+      "y": 20,
+      "width": 20,
+      "height": 28,
+      "pivotX": 0,
+      "pivotY": 0
+    },
+    "belt": {
+      "x": 8,
+      "y": 42,
+      "width": 20,
+      "height": 8,
+      "pivotX": 0,
+      "pivotY": 0
+    },
+    "legs": {
+      "x": 8,
+      "y": 48,
+      "width": 20,
+      "height": 18,
+      "pivotX": 0,
+      "pivotY": 0
+    },
+    "feet": {
+      "x": 8,
+      "y": 60,
+      "width": 22,
+      "height": 8,
+      "pivotX": 0,
+      "pivotY": 0
+    },
+    "handL": {
+      "x": 2,
+      "y": 24,
+      "width": 8,
+      "height": 18,
+      "pivotX": 4,
+      "pivotY": 0
+    },
+    "handR": {
+      "x": 28,
+      "y": 24,
+      "width": 8,
+      "height": 18,
+      "pivotX": 4,
+      "pivotY": 0
+    },
+    "back": {
+      "x": 18,
+      "y": 22,
+      "width": 26,
+      "height": 42,
+      "pivotX": 13,
+      "pivotY": 4
+    },
+    "accessories": {
+      "x": 18,
+      "y": 34,
+      "width": 18,
+      "height": 16,
+      "pivotX": 9,
+      "pivotY": 2
+    },
+    "fx": {
+      "x": 18,
+      "y": 38,
+      "width": 28,
+      "height": 28,
+      "pivotX": 14,
+      "pivotY": 14
+    }
+  }
+}
