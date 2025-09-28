@@ -36,6 +36,9 @@ const GENDER_OUTFITS={
   other:{primary:'#4c8fca',secondary:'#3a6aa3',accent:'#9fd9ff'}
 };
 
+const { drawHead, drawHair, drawExpression } = (window.AvatarDrawing || {});
+const hasAvatarHelpers = typeof drawHead === 'function' && typeof drawHair === 'function' && typeof drawExpression === 'function';
+
 const ITEM_TYPE_LABELS = {
   head: 'Голова',
   upper: 'Верх',
@@ -384,42 +387,8 @@ function drawShadowMini(ctx2, x, y, scale){
   ctx2.restore();
 }
 
-function drawExpressionMini(ctx2, emotion, cx, cy, eyesColor, scale){
-  ctx2.save();
-  const eyeDx = 4*scale;
-  const eyeR = 1.6*scale;
-  ctx2.fillStyle=eyesColor;
-  if(emotion==='surprised'){
-    ctx2.beginPath(); ctx2.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
-    ctx2.beginPath(); ctx2.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
-  }else if(emotion==='sleepy'){
-    const h=Math.max(1,0.9*scale);
-    ctx2.fillRect(cx-eyeDx-eyeR, cy-h/2, eyeR*2, h);
-    ctx2.fillRect(cx+eyeDx-eyeR, cy-h/2, eyeR*2, h);
-  }else if(emotion==='frown'){
-    ctx2.beginPath(); ctx2.ellipse(cx-eyeDx, cy, eyeR+0.6*scale, eyeR-0.6*scale, 0, 0, Math.PI*2); ctx2.fill();
-    ctx2.beginPath(); ctx2.ellipse(cx+eyeDx, cy, eyeR+0.6*scale, eyeR-0.6*scale, 0, 0, Math.PI*2); ctx2.fill();
-  }else{
-    ctx2.beginPath(); ctx2.arc(cx-eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
-    ctx2.beginPath(); ctx2.arc(cx+eyeDx, cy, eyeR, 0, Math.PI*2); ctx2.fill();
-  }
-  ctx2.strokeStyle='#2f1f12';
-  ctx2.lineWidth=Math.max(1,0.9*scale);
-  const mouthY = cy + 3*scale;
-  const mouthW = 6*scale;
-  if(emotion==='smile'){
-    ctx2.beginPath(); ctx2.arc(cx, mouthY+1.2*scale, mouthW, 0, Math.PI); ctx2.stroke();
-  }else if(emotion==='frown'){
-    ctx2.beginPath(); ctx2.arc(cx, mouthY+4*scale, mouthW, Math.PI, 0); ctx2.stroke();
-  }else if(emotion==='surprised'){
-    ctx2.beginPath(); ctx2.arc(cx, mouthY+1*scale, 2.4*scale, 0, Math.PI*2); ctx2.stroke();
-  }else{
-    ctx2.beginPath(); ctx2.moveTo(cx-mouthW, mouthY); ctx2.lineTo(cx+mouthW, mouthY); ctx2.stroke();
-  }
-  ctx2.restore();
-}
-
 function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
+  if(!hasAvatarHelpers) return;
   const app = hydrateAppearance(p.appearance);
   const genderKey = p.gender || (p.name===username ? (mePos.gender || myGender) : null) || myGender || 'other';
   const outfit = GENDER_OUTFITS[genderKey] || GENDER_OUTFITS.other;
@@ -502,25 +471,15 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
     ctx2.fillRect(bx+6*scale,by+40*scale,24*scale,5*scale);
   }
 
-  ctx2.fillStyle=skin;
-  ctx2.fillRect(bx+12*scale,by+4*scale,12*scale,12*scale);
-
-  ctx2.fillStyle=hair;
-  if(style==="short"){ ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); }
-  else if(style==="fade"){ ctx2.fillRect(bx+10*scale,by+3*scale,16*scale,5*scale); }
-  else if(style==="buzz"){ ctx2.fillRect(bx+10*scale,by+4*scale,16*scale,4*scale); }
-  else if(style==="undercut"){ ctx2.fillRect(bx+8*scale,by+1*scale,20*scale,6*scale); ctx2.clearRect(bx+8*scale,by+7*scale,20*scale,2*scale); }
-  else if(style==="mohawk"){ ctx2.fillRect(bx+18*scale,by-2*scale,4*scale,12*scale); }
-  else if(style==="curly"){ for(let i=0;i<5;i++){ ctx2.beginPath(); ctx2.arc(p.x-10*scale+i*4*scale, by+6*scale+(i%2?0:1*scale), 3*scale, 0, Math.PI*2); ctx2.fill(); } }
-  else if(style==="afro"){ ctx2.beginPath(); ctx2.arc(p.x, by+6*scale, 8*scale, 0, Math.PI*2); ctx2.fill(); }
-  else if(style==="ponytail"){ ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); ctx2.fillRect(bx+24*scale,by+6*scale,4*scale,10*scale); }
-  else if(style==="pixie"){ ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,5*scale); }
-  else if(style==="bob"){ ctx2.beginPath(); ctx2.arc(p.x, by+10*scale, 10*scale, Math.PI, 0); ctx2.fill(); }
-  else if(style==="long"){ ctx2.fillRect(bx+8*scale,by+0*scale,20*scale,18*scale); }
-  else if(style==="bun"){ ctx2.beginPath(); ctx2.arc(p.x, by+2*scale, 3*scale, 0, Math.PI*2); ctx2.fill(); ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,5*scale); }
-  else if(style==="braids"){ for(let i=0;i<3;i++){ ctx2.fillRect(bx+12*scale+i*4*scale, by+2*scale, 3*scale, 12*scale); } }
-  else { ctx2.fillRect(bx+10*scale,by+2*scale,16*scale,6*scale); }
-  drawExpressionMini(ctx2, emotion, p.x, by+8*scale, eyes, scale);
+  const isLargePreview = !withName && scale >= SCALE_PREVIEW;
+  const headRadius = (isLargePreview ? 12 : 6) * scale;
+  const headCx = p.x;
+  const headCy = by + 10*scale;
+  drawHead(ctx2, headCx, headCy, headRadius, skin);
+  const faceScale = headRadius / 36;
+  const hairTop = headCy - (headRadius * (2/3));
+  drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
+  drawExpression(ctx2, emotion, headCx, headCy, eyes, faceScale);
   if(p.equip && p.equip.head){ ctx2.fillStyle="#e94560"; ctx2.fillRect(bx+6*scale,by+0*scale,24*scale,4*scale); }
   if(p.equip && p.equip.accessory){ ctx2.fillStyle="#f8b500"; ctx2.beginPath(); ctx2.arc(p.x,by+26*scale,4*scale,0,Math.PI*2); ctx2.fill(); }
 
