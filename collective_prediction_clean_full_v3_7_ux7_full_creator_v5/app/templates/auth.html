@@ -91,10 +91,10 @@
 
           <div class="row">
             <div class="hint-row">
-              <label class="lbl">Эмоция</label>
+              <label class="lbl" for="emotion-select">Эмоция</label>
               <span class="small-muted">характер и настроение</span>
             </div>
-            <div id="emotion-sw" class="emotion-row"></div>
+            <select id="emotion-select" class="pill-select"></select>
           </div>
 
           <div class="row grid2">
@@ -217,6 +217,22 @@ function randomizeAppearanceFor(g){
   state.emotion = emo.value;
 }
 
+function snapshotAppearance(){
+  return {
+    skin: state.skin,
+    hair: state.hair,
+    eyes: state.eyes,
+    style: state.style,
+    emotion: state.emotion,
+  };
+}
+
+function syncAppearanceStorage(){
+  try{
+    localStorage.setItem('cp_appearance', JSON.stringify(snapshotAppearance()));
+  }catch(e){}
+}
+
 if(!appearanceLoaded && genderValue()==='other'){
   randomizeAppearanceFor('other');
 }
@@ -271,66 +287,34 @@ function makeStyles(){
   };
   persistAppearanceState();
 }
-function updateEmotionScrollMask(box){
-  if(!box) return;
-  const width=box.clientWidth;
-  if(width<=0){
-    box.dataset.scrollLeft='0';
-    box.dataset.scrollRight='0';
-    return;
-  }
-  const maxScroll=Math.max(0, box.scrollWidth-width);
-  if(maxScroll<=1){
-    box.dataset.scrollLeft='0';
-    box.dataset.scrollRight='0';
-    return;
-  }
-  box.dataset.scrollLeft=box.scrollLeft>1?'1':'0';
-  box.dataset.scrollRight=box.scrollLeft<maxScroll-1?'1':'0';
-}
-function centerEmotionInRow(box){
-  if(!box) return;
-  const width=box.clientWidth;
-  if(width<=0){ updateEmotionScrollMask(box); return; }
-  const selected=box.querySelector('.emotion-btn[data-selected="1"]');
-  const maxScroll=Math.max(0, box.scrollWidth-width);
-  if(selected){
-    const target=selected.offsetLeft-(width-selected.offsetWidth)/2;
-    box.scrollLeft=Math.max(0, Math.min(maxScroll, target));
-  }
-  updateEmotionScrollMask(box);
-}
-function attachEmotionScroll(box){
-  if(!box) return;
-  if(!box.dataset.scrollHook){
-    box.addEventListener('scroll',()=>updateEmotionScrollMask(box),{passive:true});
-    box.dataset.scrollHook='1';
-  }
-  requestAnimationFrame(()=>centerEmotionInRow(box));
-}
 function makeEmotions(){
-  const box=document.getElementById('emotion-sw'); if(!box) return;
-  box.innerHTML="";
-  box.dataset.scrollLeft='0';
-  box.dataset.scrollRight='0';
+  const select=document.getElementById('emotion-select');
+  if(!select) return;
   const current=state.emotion;
+  select.innerHTML="";
   EMOTIONS.forEach(em=>{
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.className='emotion-btn';
-    btn.innerHTML=`<span class="emo-icon">${em.icon}</span><span>${em.label}</span>`;
-    btn.dataset.val=em.value;
-    btn.addEventListener('click',()=>{
-      state.emotion=em.value;
-      box.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
-      btn.dataset.selected=1;
-      redrawPreview();
-      centerEmotionInRow(box);
-    });
-    if(em.value===current) btn.dataset.selected=1;
-    box.appendChild(btn);
+    const option=document.createElement('option');
+    option.value=em.value;
+    option.textContent=`${em.icon} ${em.label}`;
+    select.appendChild(option);
   });
-  attachEmotionScroll(box);
+  select.value = current;
+  if(select.value!==current){
+    const fallback = EMOTIONS[0]?.value || 'smile';
+    select.value = fallback;
+    state.emotion = select.value || 'smile';
+    redrawPreview();
+    syncAppearanceStorage();
+  }
+  if(select.dataset.bound!=="1"){
+    select.addEventListener('change',()=>{
+      const next=select.value||'smile';
+      state.emotion=next;
+      redrawPreview();
+      syncAppearanceStorage();
+    });
+    select.dataset.bound="1";
+  }
 }
 const genderSelect=document.getElementById('gender-select');
 if(genderSelect){
