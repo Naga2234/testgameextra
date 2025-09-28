@@ -484,6 +484,78 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   if(p.equip && p.equip.accessory){ ctx2.fillStyle="#f8b500"; ctx2.beginPath(); ctx2.arc(p.x,by+26*scale,4*scale,0,Math.PI*2); ctx2.fill(); }
 
   if(withName){
+    const now=Date.now();
+    const chat=(p.chat && p.chat.text && (!p.chat.expiresAt || p.chat.expiresAt>now)) ? p.chat : null;
+    if(chat){
+      const bubbleScale=Math.max(1, scale);
+      const fontPx=Math.max(12, Math.round(11*bubbleScale));
+      const lineHeight=fontPx+Math.round(4*bubbleScale);
+      const maxWidth=160*bubbleScale;
+      ctx2.save();
+      ctx2.font=`500 ${fontPx}px Inter,system-ui`;
+      ctx2.textAlign="center";
+      const rawLines=String(chat.text).split(/\n/);
+      const lines=[];
+      rawLines.forEach(segment=>{
+        const words=segment.split(/\s+/).filter(Boolean);
+        if(!words.length){
+          lines.push("");
+          return;
+        }
+        let current="";
+        words.forEach(word=>{
+          const attempt=current?`${current} ${word}`:word;
+          if(ctx2.measureText(attempt).width<=maxWidth||!current){
+            current=attempt;
+          }else{
+            lines.push(current);
+            current=word;
+          }
+        });
+        if(current){ lines.push(current); }
+      });
+      if(lines.length===0){ lines.push(String(chat.text)); }
+      const textWidth=Math.max(...lines.map(line=>ctx2.measureText(line).width));
+      const paddingX=8*bubbleScale;
+      const paddingY=6*bubbleScale;
+      const bubbleWidth=textWidth+paddingX*2;
+      const bubbleHeight=lines.length*lineHeight+paddingY*2;
+      const pointerHeight=10*bubbleScale;
+      const pointerHalfWidth=8*bubbleScale;
+      const headTop=headCy-headRadius;
+      const bubbleBottomTarget=headTop-4*bubbleScale;
+      const bubbleY=Math.max(12, bubbleBottomTarget-pointerHeight-bubbleHeight);
+      const bubbleX=p.x-bubbleWidth/2;
+      const bubbleBottom=bubbleY+bubbleHeight;
+      const pointerTipY=headTop-2*bubbleScale;
+      ctx2.fillStyle="rgba(17,24,39,0.92)";
+      ctx2.beginPath();
+      const r=10*bubbleScale;
+      ctx2.moveTo(bubbleX+r, bubbleY);
+      ctx2.lineTo(bubbleX+bubbleWidth-r, bubbleY);
+      ctx2.quadraticCurveTo(bubbleX+bubbleWidth, bubbleY, bubbleX+bubbleWidth, bubbleY+r);
+      ctx2.lineTo(bubbleX+bubbleWidth, bubbleBottom-r);
+      ctx2.quadraticCurveTo(bubbleX+bubbleWidth, bubbleBottom, bubbleX+bubbleWidth-r, bubbleBottom);
+      ctx2.lineTo(bubbleX+r, bubbleBottom);
+      ctx2.quadraticCurveTo(bubbleX, bubbleBottom, bubbleX, bubbleBottom-r);
+      ctx2.lineTo(bubbleX, bubbleY+r);
+      ctx2.quadraticCurveTo(bubbleX, bubbleY, bubbleX+r, bubbleY);
+      ctx2.closePath();
+      ctx2.fill();
+      ctx2.beginPath();
+      ctx2.moveTo(p.x-pointerHalfWidth, bubbleBottom);
+      ctx2.lineTo(p.x+pointerHalfWidth, bubbleBottom);
+      ctx2.lineTo(p.x, Math.max(pointerTipY, bubbleBottom+pointerHeight/2));
+      ctx2.closePath();
+      ctx2.fill();
+      ctx2.fillStyle="#f9fafb";
+      let textY=bubbleY+paddingY+fontPx;
+      lines.forEach(line=>{
+        ctx2.fillText(line, p.x, textY);
+        textY+=lineHeight;
+      });
+      ctx2.restore();
+    }
     const fontPx = (scale===SCALE_PREVIEW ? NAME_PREVIEW_PX : NAME_SCENE_PX);
     ctx2.fillStyle="#111827"; ctx2.textAlign="center"; ctx2.font = `500 ${fontPx}px Inter,system-ui`; ctx2.fillText(p.name, p.x, by-18);
   }
@@ -537,6 +609,33 @@ const charCanvas=document.getElementById("char-canvas"), cctx=charCanvas.getCont
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
     others={};
 
+const CHAT_BUBBLE_DURATION = 4200;
+
+function showSpeechBubble(name, text){
+  if(!text) return;
+  const target = name===mePos.name ? mePos : others[name];
+  if(!target) return;
+  const nextBubble={
+    text:String(text),
+    expiresAt:Date.now()+CHAT_BUBBLE_DURATION,
+    timeoutId:null
+  };
+  if(target.chat?.timeoutId){
+    clearTimeout(target.chat.timeoutId);
+  }
+  target.chat=nextBubble;
+  drawStage();
+  nextBubble.timeoutId=setTimeout(()=>{
+    if(target.chat===nextBubble){
+      delete target.chat;
+      drawStage();
+    }
+  },CHAT_BUBBLE_DURATION);
+  if(target.chat){
+    target.chat.timeoutId=nextBubble.timeoutId;
+  }
+}
+
 function drawStage(){
   ctx.clearRect(0,0,stage.width,stage.height);
   ctx.fillStyle="#d4e6ff"; ctx.fillRect(0,stage.height-100,stage.width,100);
@@ -580,7 +679,7 @@ function connectWS(){
   ws.onclose=()=>{ sys("соединение потеряно, переподключаюсь..."); clearTimeout(wsTimer); wsTimer=setTimeout(connectWS,1200); };
   ws.onmessage=(ev)=>{ try{
     const d=JSON.parse(ev.data);
-    if(d.type==="chat"){ addMsg(`${d.name}: ${d.msg}`); }
+    if(d.type==="chat"){ addMsg(`${d.name}: ${d.msg}`); showSpeechBubble(d.name, d.msg); }
     else if(d.type==="snapshot"){
       if(d.me){
         mePos.x=d.me.x; mePos.y=d.me.y; mePos.equip=d.me.equip||{};
@@ -595,11 +694,31 @@ function connectWS(){
         }
         renderEmotionPanel();
       }
+      const prevOthers=others;
+      const seen=new Set();
       others={};
       (d.players||[]).forEach(p=>{
         if(p.name===mePos.name) return;
-        others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance),gender:p.gender||'other'};
+        const existing=prevOthers?.[p.name];
+        if(existing){
+          existing.x=p.x;
+          existing.y=p.y;
+          existing.equip=p.equip||{};
+          existing.appearance=hydrateAppearance(p.appearance);
+          existing.gender=p.gender||existing.gender||'other';
+          others[p.name]=existing;
+        }else{
+          others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance),gender:p.gender||'other'};
+        }
+        seen.add(p.name);
       });
+      if(prevOthers){
+        Object.entries(prevOthers).forEach(([name, info])=>{
+          if(!seen.has(name) && info?.chat?.timeoutId){
+            clearTimeout(info.chat.timeoutId);
+          }
+        });
+      }
       drawStage(); drawCharPreview();
     }
     else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
@@ -612,7 +731,7 @@ function connectWS(){
 function sendPresence(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"presence", name:mePos.name})); }
 function sendLeave(){ try{ if(ws?.readyState===1) ws.send(JSON.stringify({type:"leave", name:mePos.name})); }catch(e){} }
 window.addEventListener("beforeunload", sendLeave);
-function sendChat(){ const t=(input.value||"").trim(); if(!t) return; if(ws?.readyState!==1){ sys("нет соединения"); return; } ws.send(JSON.stringify({type:"chat", name:mePos.name, msg:t})); input.value=""; }
+function sendChat(){ const t=(input.value||"").trim(); if(!t) return; if(ws?.readyState!==1){ sys("нет соединения"); return; } ws.send(JSON.stringify({type:"chat", name:mePos.name, msg:t})); showSpeechBubble(mePos.name, t); input.value=""; }
 btn.addEventListener("click", sendChat); input.addEventListener("keypress",(e)=>{ if(e.key==="Enter") sendChat(); });
 function sendMove(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"move", name:mePos.name, x:mePos.x, y:mePos.y})); }
 function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", name:mePos.name, equip:mePos.equip||{}, appearance: hydrateAppearance(mePos.appearance)})); }
