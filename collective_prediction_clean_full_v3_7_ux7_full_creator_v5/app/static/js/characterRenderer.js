@@ -552,32 +552,86 @@
 
     const shoeColors=palette.shoes||{};
     ctx.save();
-    const shoeGrad=ctx.createLinearGradient(centerX, shoeTop, centerX, shoeTop+shoeHeight);
-    shoeGrad.addColorStop(0, shoeColors.highlight||shoeColors.base||'#666');
-    shoeGrad.addColorStop(0.6, shoeColors.base||'#444');
-    shoeGrad.addColorStop(1, shoeColors.shadow||shoeColors.trim||'#222');
-    ctx.fillStyle=shoeGrad;
-    const leftToe=torsoX+3*scale;
-    const rightToe=torsoX+torsoWidth+5*scale;
-    ctx.beginPath();
-    ctx.moveTo(leftToe, shoeTop);
-    ctx.quadraticCurveTo(leftToe-2*scale, shoeTop+shoeHeight*0.7, leftToe+2*scale, shoeTop+shoeHeight);
-    ctx.lineTo(rightToe-2*scale, shoeTop+shoeHeight);
-    ctx.quadraticCurveTo(rightToe+2*scale, shoeTop+shoeHeight*0.7, rightToe-2*scale, shoeTop);
-    ctx.closePath();
-    ctx.fill();
-    if(shoeColors.stroke){
-      ctx.strokeStyle=shoeColors.stroke;
-      ctx.lineWidth=Math.max(1,1.2*scale);
-      ctx.stroke();
-    }
-    if(shoeColors.trim){
-      ctx.strokeStyle=shoeColors.trim;
-      ctx.lineWidth=0.8*scale;
+    const legs=metrics.legs||{};
+    const leftLeg=legs.left;
+    const rightLeg=legs.right;
+    const fallbackShoes=()=>{
+      const shoeGrad=ctx.createLinearGradient(centerX, shoeTop, centerX, shoeTop+shoeHeight);
+      shoeGrad.addColorStop(0, shoeColors.highlight||shoeColors.base||'#666');
+      shoeGrad.addColorStop(0.6, shoeColors.base||'#444');
+      shoeGrad.addColorStop(1, shoeColors.shadow||shoeColors.trim||'#222');
+      ctx.fillStyle=shoeGrad;
+      const leftToe=torsoX+3*scale;
+      const rightToe=torsoX+torsoWidth+5*scale;
       ctx.beginPath();
-      ctx.moveTo(leftToe+4*scale, shoeTop+shoeHeight*0.35);
-      ctx.quadraticCurveTo(centerX, shoeTop+shoeHeight*0.15, rightToe-6*scale, shoeTop+shoeHeight*0.35);
-      ctx.stroke();
+      ctx.moveTo(leftToe, shoeTop);
+      ctx.quadraticCurveTo(leftToe-2*scale, shoeTop+shoeHeight*0.7, leftToe+2*scale, shoeTop+shoeHeight);
+      ctx.lineTo(rightToe-2*scale, shoeTop+shoeHeight);
+      ctx.quadraticCurveTo(rightToe+2*scale, shoeTop+shoeHeight*0.7, rightToe-2*scale, shoeTop);
+      ctx.closePath();
+      ctx.fill();
+      if(shoeColors.stroke){
+        ctx.strokeStyle=shoeColors.stroke;
+        ctx.lineWidth=Math.max(1,1.2*scale);
+        ctx.stroke();
+      }
+      if(shoeColors.trim){
+        ctx.strokeStyle=shoeColors.trim;
+        ctx.lineWidth=0.8*scale;
+        ctx.beginPath();
+        ctx.moveTo(leftToe+4*scale, shoeTop+shoeHeight*0.35);
+        ctx.quadraticCurveTo(centerX, shoeTop+shoeHeight*0.15, rightToe-6*scale, shoeTop+shoeHeight*0.35);
+        ctx.stroke();
+      }
+    };
+
+    const drawShoe=(leg)=>{
+      if(!leg) return;
+      const ankleInnerX=leg.ankleInnerX;
+      const ankleOuterX=leg.ankleOuterX;
+      if(ankleInnerX==null||ankleOuterX==null) return;
+      const ankleY=leg.ankleY!=null?leg.ankleY:shoeTop;
+      const direction=leg.direction||((ankleOuterX>=ankleInnerX)?1:-1);
+      const rawWidth=Math.abs(ankleOuterX-ankleInnerX);
+      const footWidth=leg.footWidth!=null?leg.footWidth:Math.max(rawWidth,1.8*scale);
+      const shoeBottom=ankleY+shoeHeight;
+      const footCenter=(ankleInnerX+ankleOuterX)/2;
+      const heelDepth=footWidth*0.45;
+      const outerCurve=footWidth*0.6;
+      const toeReach=footWidth*0.95;
+      const soleDip=shoeHeight*0.25;
+      const shoeGrad=ctx.createLinearGradient(footCenter, ankleY, footCenter, shoeBottom);
+      shoeGrad.addColorStop(0, shoeColors.highlight||shoeColors.base||'#666');
+      shoeGrad.addColorStop(0.6, shoeColors.base||'#444');
+      shoeGrad.addColorStop(1, shoeColors.shadow||shoeColors.trim||'#222');
+      ctx.fillStyle=shoeGrad;
+      ctx.beginPath();
+      ctx.moveTo(ankleInnerX, ankleY);
+      ctx.bezierCurveTo(ankleInnerX - direction*heelDepth*0.55, ankleY + shoeHeight*0.2, ankleInnerX - direction*heelDepth, shoeBottom - soleDip, ankleInnerX - direction*heelDepth*0.25, shoeBottom);
+      ctx.bezierCurveTo(footCenter, shoeBottom + shoeHeight*0.35, ankleOuterX + direction*toeReach, shoeBottom - shoeHeight*0.1, ankleOuterX + direction*outerCurve, ankleY + shoeHeight*0.55);
+      ctx.quadraticCurveTo(ankleOuterX + direction*footWidth*0.18, ankleY + shoeHeight*0.18, ankleOuterX, ankleY);
+      ctx.closePath();
+      ctx.fill();
+      if(shoeColors.stroke){
+        ctx.strokeStyle=shoeColors.stroke;
+        ctx.lineWidth=Math.max(1,1.2*scale);
+        ctx.stroke();
+      }
+      if(shoeColors.trim){
+        ctx.strokeStyle=shoeColors.trim;
+        ctx.lineWidth=0.75*scale;
+        ctx.beginPath();
+        ctx.moveTo(ankleInnerX - direction*heelDepth*0.2, ankleY + shoeHeight*0.35);
+        ctx.quadraticCurveTo(footCenter, ankleY + shoeHeight*0.12, ankleOuterX + direction*outerCurve*0.55, ankleY + shoeHeight*0.4);
+        ctx.stroke();
+      }
+    };
+
+    if(!leftLeg && !rightLeg){
+      fallbackShoes();
+    }else{
+      drawShoe(leftLeg);
+      drawShoe(rightLeg);
     }
     ctx.restore();
 
