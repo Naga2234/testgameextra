@@ -479,12 +479,17 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const headRadius = (isLargePreview ? 12 : 6) * scale;
   const headCx = p.x;
   const headCy = by + 10*scale;
+  const headTop = headCy - headRadius;
   drawHead(ctx2, headCx, headCy, headRadius, skin);
   const faceScale = headRadius / 36;
   const hairTop = headCy - (headRadius * (2/3));
   drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
   drawExpression(ctx2, emotion, headCx, headCy, eyes, faceScale);
-  if(p.equip && p.equip.head){ ctx2.fillStyle="#e94560"; ctx2.fillRect(bx+6*scale,by+0*scale,24*scale,4*scale); }
+  if(p.equip && p.equip.head){
+    ctx2.fillStyle="#e94560";
+    const hatTop = headTop - 4*scale;
+    ctx2.fillRect(headCx - headRadius, hatTop, headRadius * 2, 4*scale);
+  }
   if(p.equip && p.equip.accessory){ ctx2.fillStyle="#f8b500"; ctx2.beginPath(); ctx2.arc(p.x,by+26*scale,4*scale,0,Math.PI*2); ctx2.fill(); }
 
   if(withName){
