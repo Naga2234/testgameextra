@@ -33,6 +33,13 @@
     return fallback;
   }
 
+  function normalizeGender(value){
+    if(typeof value !== 'string'){
+      return '';
+    }
+    return value.trim().toLowerCase();
+  }
+
   function drawUpperLayer(shared){
     const {ctx, metrics, palette, scale, equip, gender, options} = shared;
     if(!ctx) return;
@@ -109,6 +116,73 @@
       ctx.beginPath();
       ctx.moveTo(centerX + seamOffset, neckBaseY - collarDrop - collarDip*0.5);
       ctx.quadraticCurveTo(centerX + seamOffset, waistY + 0.6*scale, centerX + seamOffset, hipY - 0.3*scale);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawUnderwearUpper(shared){
+    const {ctx, metrics, palette, scale, equip, gender} = shared;
+    if(!ctx) return;
+    const normalizedGender = normalizeGender(gender);
+    if(normalizedGender === 'male'){
+      return;
+    }
+    if(equip && equip.upper){
+      return;
+    }
+    const {centerX, torsoY, torsoHeight} = metrics;
+    if(centerX == null || torsoY == null || torsoHeight == null) return;
+    const contour = metrics.torsoContour || {};
+    const neckBaseY = contour.neckBaseY != null ? contour.neckBaseY : torsoY;
+    const chestY = contour.chestY != null ? contour.chestY : torsoY + 8*scale;
+    const shoulderHalf = contour.shoulderHalf != null ? contour.shoulderHalf : (metrics.torsoWidth || 20*scale)/2 + 2*scale;
+    const chestHalf = contour.chestHalf != null ? contour.chestHalf : shoulderHalf - 0.8*scale;
+    const bustEase = contour.underwearBustEase != null ? contour.underwearBustEase : 1.2*scale;
+    const bustDrop = contour.underwearBustDrop != null ? contour.underwearBustDrop : 4.6*scale;
+    const strapDrop = contour.underwearStrapDrop != null ? contour.underwearStrapDrop : 1.6*scale;
+    const underarmInset = contour.underwearUnderarmInset != null ? contour.underwearUnderarmInset : 1.8*scale;
+    const bustBottom = chestY + bustDrop;
+    const colors = palette.upperUnderwear || palette.upperUnder || palette.upper || {};
+    const baseColor = colors.base || '#f1d5f7';
+    const highlight = colors.highlight || '#fff5ff';
+    const shadow = colors.shadow || '#d3b1e8';
+    ctx.save();
+    const grad = ctx.createLinearGradient(centerX, neckBaseY + strapDrop - 1.5*scale, centerX, bustBottom + 1.5*scale);
+    grad.addColorStop(0, highlight);
+    grad.addColorStop(0.65, baseColor);
+    grad.addColorStop(1, shadow);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(centerX - shoulderHalf + underarmInset, neckBaseY + strapDrop);
+    ctx.quadraticCurveTo(centerX - chestHalf*0.6, neckBaseY + strapDrop - scale*0.4, centerX, neckBaseY + strapDrop - scale*0.5);
+    ctx.quadraticCurveTo(centerX + chestHalf*0.6, neckBaseY + strapDrop - scale*0.4, centerX + shoulderHalf - underarmInset, neckBaseY + strapDrop);
+    ctx.quadraticCurveTo(centerX + chestHalf + bustEase*0.4, chestY + strapDrop*0.8, centerX + chestHalf - bustEase, bustBottom);
+    ctx.quadraticCurveTo(centerX, bustBottom + 1.1*scale, centerX - (chestHalf - bustEase), bustBottom);
+    ctx.quadraticCurveTo(centerX - chestHalf - bustEase*0.4, chestY + strapDrop*0.8, centerX - shoulderHalf + underarmInset, neckBaseY + strapDrop);
+    ctx.closePath();
+    ctx.fill();
+
+    if(colors.trim){
+      const trimWidth = colors.trimWidth != null ? colors.trimWidth : 0.7*scale;
+      ctx.strokeStyle = colors.trim;
+      ctx.lineWidth = Math.max(0.45*scale, trimWidth);
+      ctx.beginPath();
+      ctx.moveTo(centerX - shoulderHalf + underarmInset + 0.3*scale, neckBaseY + strapDrop + 0.1*scale);
+      ctx.quadraticCurveTo(centerX - chestHalf*0.55, neckBaseY + strapDrop - scale*0.2, centerX, neckBaseY + strapDrop - scale*0.3);
+      ctx.quadraticCurveTo(centerX + chestHalf*0.55, neckBaseY + strapDrop - scale*0.2, centerX + shoulderHalf - underarmInset - 0.3*scale, neckBaseY + strapDrop + 0.1*scale);
+      ctx.stroke();
+    }
+
+    if(colors.highlight){
+      const sheenOffset = colors.highlightOffset != null ? colors.highlightOffset : 1.4*scale;
+      const sheenWidth = Math.max(0.45*scale, colors.highlightWidth != null ? colors.highlightWidth : 0.75*scale);
+      ctx.strokeStyle = colors.highlight;
+      ctx.lineWidth = sheenWidth;
+      ctx.beginPath();
+      ctx.moveTo(centerX - sheenOffset, chestY + strapDrop*0.6);
+      ctx.quadraticCurveTo(centerX - sheenOffset*0.2, chestY + strapDrop*0.2, centerX - sheenOffset*0.1, bustBottom - 1.5*scale);
       ctx.stroke();
     }
 
@@ -431,6 +505,17 @@
         placement: 'underHair',
         condition: () => true,
         draw: drawLowerLayer
+      },
+      {
+        id: 'upper-underwear',
+        slot: 'upper-underwear',
+        order: 15,
+        placement: 'underHair',
+        condition: ({equip, gender}) => {
+          const normalized = normalizeGender(gender);
+          return normalized !== 'male' && !(equip && equip.upper);
+        },
+        draw: drawUnderwearUpper
       },
       {
         id: 'upper-base',
