@@ -16,13 +16,6 @@ function updateGenderBadge(value){
 }
 updateGenderBadge(myGender);
 
-// ---- SCALE / FONT ----
-const SCALE_SCENE = 2.4;
-const SCALE_PREVIEW = 3.0;
-const NAME_BASE_PX = 12;
-const NAME_SCENE_PX = Math.round(NAME_BASE_PX * SCALE_SCENE);
-const NAME_PREVIEW_PX = Math.round(NAME_BASE_PX * SCALE_PREVIEW) + 4;
-
 const EMOTIONS = [
   {value:'smile',label:'Улыбка',icon:'🙂'},
   {value:'neutral',label:'Спокойно',icon:'😐'},
@@ -30,14 +23,17 @@ const EMOTIONS = [
   {value:'surprised',label:'Удивлён',icon:'😯'},
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
-const CharacterRenderer = window.CharacterRenderer || {};
-function characterRendererReady(){
-  if(!CharacterRenderer) return false;
-  if(typeof CharacterRenderer.isReady === 'function'){
-    return CharacterRenderer.isReady();
-  }
-  return typeof CharacterRenderer.draw === 'function';
-}
+const HAIR_STYLES=['short','buzz','fade','undercut','mohawk','curly','afro','ponytail','pixie','bob','long','bun','braids'];
+const VALID_HAIR_STYLES=new Set(HAIR_STYLES);
+const VALID_EMOTIONS=new Set(EMOTIONS.map(e=>e.value));
+const SLOT_KEYS=['head','upper','lower','cloak','shoes','accessory'];
+const DEFAULT_APPEARANCE={skin:'#e6caa6',hair:'#2b2b2b',eyes:'#2b4c7e',style:'short',emotion:'smile'};
+const OUTFIT_PALETTES={
+  male:{upper:'#4f81c7',lower:'#2f4f7d',cloak:'#123863',cloakTrim:'#0f2d55',shoes:'#2c3f5e',head:'#3a6ea5',headBand:'#1f2f57',accessory:'#f3b234'},
+  female:{upper:'#f3aee2',lower:'#d16ec7',cloak:'#a056c7',cloakTrim:'#6f2d8d',shoes:'#b35ad4',head:'#e97dce',headBand:'#9d3b8e',accessory:'#f6b8d6'},
+  other:{upper:'#5c9ed8',lower:'#3a6aa3',cloak:'#1f4e86',cloakTrim:'#12345a',shoes:'#2c3f5e',head:'#4c8fca',headBand:'#203d5c',accessory:'#f5ce6a'}
+};
+const DEFAULT_STAGE_SIZE={width:1100,height:460};
 
 const ITEM_TYPE_LABELS = {
   head: 'Голова',
@@ -316,16 +312,16 @@ function renderEquipped(){
 const storedAppearance = (()=>{ try{ return JSON.parse(localStorage.getItem('cp_appearance')||'{}'); }catch(e){ return {}; } })();
 
 function hydrateAppearance(app){
-  if(CharacterRenderer && typeof CharacterRenderer.normalizeAppearance === 'function'){
-    return CharacterRenderer.normalizeAppearance(app);
-  }
-  const base = Object.assign({}, {skin:'#e6caa6', hair:'#2b2b2b', eyes:'#2b4c7e', style:'short', emotion:'smile'}, app||{});
-  if(!EMOTIONS.some(e=>e.value===base.emotion)) base.emotion='smile';
+  const base=Object.assign({}, DEFAULT_APPEARANCE, app||{});
+  base.skin=normalizeHexColor(base.skin, DEFAULT_APPEARANCE.skin);
+  base.hair=normalizeHexColor(base.hair, DEFAULT_APPEARANCE.hair);
+  base.eyes=normalizeHexColor(base.eyes, DEFAULT_APPEARANCE.eyes);
+  base.emotion=VALID_EMOTIONS.has(base.emotion)?base.emotion:DEFAULT_APPEARANCE.emotion;
+  base.style=VALID_HAIR_STYLES.has(base.style)?base.style:DEFAULT_APPEARANCE.style;
   return base;
 }
 
 let myAppearance = hydrateAppearance(storedAppearance);
-function applyAppearanceTo(p){ p.appearance = hydrateAppearance(p.appearance); }
 
 function renderEmotionPanel(){
   const select=emotionPanel;
@@ -377,8 +373,38 @@ async function persistAppearance(){
 }
 
 // Stage rendering
-const stage=document.getElementById("stage"), ctx=stage.getContext("2d");
-const charCanvas=document.getElementById("char-canvas"), cctx=charCanvas.getContext("2d");
+const stage=document.getElementById("stage");
+const charPreviewStage=document.getElementById("char-preview");
+const CHARACTER_TEMPLATE=`
+  <div class="character-shadow"></div>
+  <div class="character-inner">
+    <div class="character-head">
+      <div class="character-hair-back"></div>
+      <div class="character-face">
+        <div class="character-eyebrows">
+          <span class="character-eyebrow left"></span>
+          <span class="character-eyebrow right"></span>
+        </div>
+        <div class="character-eyes">
+          <span class="character-eye left"></span>
+          <span class="character-eye right"></span>
+        </div>
+        <div class="character-mouth"></div>
+      </div>
+      <div class="character-hair"></div>
+    </div>
+    <div class="character-body">
+      <div class="character-arm left"></div>
+      <div class="character-arm right"></div>
+      <div class="character-torso">
+        <div class="character-underwear"></div>
+      </div>
+      <div class="character-leg left"></div>
+      <div class="character-leg right"></div>
+    </div>
+  </div>`;
+const stagePlayers=new Map();
+let previewCharacter=null;
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
     others={};
 
@@ -409,30 +435,170 @@ function showSpeechBubble(name, text){
   }
 }
 
-function drawStage(){
-  ctx.clearRect(0,0,stage.width,stage.height);
-  ctx.fillStyle="#d4e6ff"; ctx.fillRect(0,stage.height-100,stage.width,100);
-  if(!characterRendererReady()){
-    return;
+function createCharacterElement(){
+  const wrapper=document.createElement('div');
+  wrapper.className='character';
+  wrapper.innerHTML=CHARACTER_TEMPLATE;
+  return wrapper;
+}
+function createStagePlayerElement(name,{withName=true,withBubble=true}={}){
+  const container=document.createElement('div');
+  container.className='stage-player';
+  container.dataset.name=name;
+  let bubble=null;
+  if(withBubble){
+    bubble=document.createElement('div');
+    bubble.className='speech-bubble';
+    bubble.hidden=true;
+    container.appendChild(bubble);
   }
-  const sceneOptions={
-    scale:SCALE_SCENE,
-    withName:true,
-    nameFontPx:NAME_SCENE_PX
+  const characterEl=createCharacterElement();
+  container.appendChild(characterEl);
+  let nameEl=null;
+  if(withName){
+    nameEl=document.createElement('div');
+    nameEl.className='character-name';
+    nameEl.textContent=name;
+    container.appendChild(nameEl);
+  }
+  return {container, bubble, characterEl, nameEl};
+}
+function normalizeHexColor(value, fallback){
+  if(typeof value!=='string') return fallback;
+  const match=value.trim().match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+  if(!match) return fallback;
+  let raw=match[1];
+  if(raw.length===3){
+    raw=raw.split('').map(ch=>ch+ch).join('');
+  }
+  return `#${raw.toLowerCase()}`;
+}
+function getOutfitPalette(gender){
+  return OUTFIT_PALETTES[gender] || OUTFIT_PALETTES.other;
+}
+function getStageBounds(){
+  return {
+    width:stage?.clientWidth||DEFAULT_STAGE_SIZE.width,
+    height:stage?.clientHeight||DEFAULT_STAGE_SIZE.height
   };
-  CharacterRenderer.draw(ctx, mePos, sceneOptions);
-  Object.values(others).forEach(p=>CharacterRenderer.draw(ctx, p, sceneOptions));
+}
+function applyCharacterToElement(el, info){
+  if(!el) return;
+  const gender=(info.gender||myGender||'other');
+  const appearance=hydrateAppearance(info.appearance);
+  el.dataset.gender=gender;
+  el.dataset.emotion=appearance.emotion;
+  el.dataset.style=appearance.style;
+  el.style.setProperty('--skin', normalizeHexColor(appearance.skin, DEFAULT_APPEARANCE.skin));
+  el.style.setProperty('--hair', normalizeHexColor(appearance.hair, DEFAULT_APPEARANCE.hair));
+  el.style.setProperty('--eyes', normalizeHexColor(appearance.eyes, DEFAULT_APPEARANCE.eyes));
+  const palette=getOutfitPalette(gender);
+  el.style.setProperty('--upper-color', palette.upper);
+  el.style.setProperty('--lower-color', palette.lower);
+  el.style.setProperty('--cloak-color', palette.cloak);
+  el.style.setProperty('--cloak-trim', palette.cloakTrim);
+  el.style.setProperty('--shoe-color', palette.shoes);
+  el.style.setProperty('--headwear-color', palette.head);
+  el.style.setProperty('--headwear-band', palette.headBand);
+  el.style.setProperty('--accessory-color', palette.accessory);
+  const equip=info.equip||{};
+  const underwearColor=equip.lower?palette.lower:'#6aa2ff';
+  el.style.setProperty('--underwear', underwearColor);
+  SLOT_KEYS.forEach(slot=>{
+    el.classList.toggle(`has-${slot}`, !!equip[slot]);
+  });
+}
+function updateStagePlayer(player, isMe){
+  if(!stage || !player || !player.name) return;
+  let entry=stagePlayers.get(player.name);
+  if(!entry){
+    entry=createStagePlayerElement(player.name);
+    stage.appendChild(entry.container);
+    stagePlayers.set(player.name, entry);
+  }
+  entry.container.dataset.name=player.name;
+  entry.container.classList.toggle('me', !!isMe);
+  if(entry.nameEl){
+    entry.nameEl.textContent=player.name;
+  }
+  applyCharacterToElement(entry.characterEl, player);
+  const bounds=getStageBounds();
+  const rawX=Number.isFinite(player.x)?player.x:bounds.width/2;
+  const rawY=Number.isFinite(player.y)?player.y:bounds.height-120;
+  const clampedX=Math.max(40, Math.min(bounds.width-40, rawX));
+  const clampedY=Math.max(120, Math.min(bounds.height-20, rawY));
+  entry.container.style.left=`${clampedX}px`;
+  entry.container.style.top=`${clampedY}px`;
+  entry.container.style.zIndex=String(1000+Math.round(clampedY));
+  if(entry.bubble){
+    if(player.chat?.text){
+      entry.bubble.textContent=player.chat.text;
+      entry.bubble.hidden=false;
+    }else{
+      entry.bubble.hidden=true;
+    }
+  }
+}
+function drawStage(){
+  if(!stage) return;
+  clampMyPosition();
+  const active=new Set();
+  if(mePos?.name){
+    updateStagePlayer(mePos, true);
+    active.add(mePos.name);
+  }
+  Object.values(others).forEach(p=>{
+    if(p?.name){
+      updateStagePlayer(p, false);
+      active.add(p.name);
+    }
+  });
+  const toRemove=[];
+  stagePlayers.forEach((entry,name)=>{
+    if(!active.has(name)){
+      if(entry?.container?.parentNode===stage){
+        stage.removeChild(entry.container);
+      }
+      toRemove.push(name);
+    }
+  });
+  toRemove.forEach(name=>stagePlayers.delete(name));
 }
 function drawCharPreview(){
-  cctx.clearRect(0,0,charCanvas.width,charCanvas.height);
-  if(!characterRendererReady()){
-    return;
+  if(!charPreviewStage) return;
+  if(!previewCharacter){
+    previewCharacter=createStagePlayerElement(mePos.name,{withName:false,withBubble:false});
+    previewCharacter.container.classList.add('me');
+    charPreviewStage.appendChild(previewCharacter.container);
   }
-  const p={name:username,x:charCanvas.width/2,y:charCanvas.height/2+40,equip:mePos.equip,appearance:mePos.appearance,gender:mePos.gender||myGender};
-  CharacterRenderer.draw(cctx, p, {scale:SCALE_PREVIEW, withName:false, preview:true});
+  applyCharacterToElement(previewCharacter.characterEl, mePos);
 }
-document.getElementById("go-left").addEventListener("click", ()=>{ mePos.x=Math.max(40, mePos.x-30); sendMove(); drawStage(); });
-document.getElementById("go-right").addEventListener("click", ()=>{ mePos.x=Math.min(stage.width-40, mePos.x+30); sendMove(); drawStage(); });
+function clampMyPosition(){
+  const bounds=getStageBounds();
+  mePos.x=Math.max(40, Math.min(bounds.width-40, mePos.x));
+  mePos.y=Math.max(120, Math.min(bounds.height-20, mePos.y));
+}
+const goLeftBtn=document.getElementById("go-left");
+if(goLeftBtn){
+  goLeftBtn.addEventListener("click", ()=>{
+    mePos.x=Math.max(40, mePos.x-30);
+    clampMyPosition();
+    sendMove();
+    drawStage();
+  });
+}
+const goRightBtn=document.getElementById("go-right");
+if(goRightBtn){
+  goRightBtn.addEventListener("click", ()=>{
+    mePos.x=Math.min(getStageBounds().width-40, mePos.x+30);
+    clampMyPosition();
+    sendMove();
+    drawStage();
+  });
+}
+if(stage){
+  window.addEventListener('resize', ()=>{ clampMyPosition(); drawStage(); });
+}
 
 async function refreshAvatar(){
   const st=await api("/api/avatar_state?username="+encodeURIComponent(username));

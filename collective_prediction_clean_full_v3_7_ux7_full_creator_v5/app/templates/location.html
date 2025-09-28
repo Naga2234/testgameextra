@@ -20,7 +20,7 @@
 <main class="mur-layout vertical">
   <section class="mur-stage">
     <div class="stage-wrap">
-      <canvas id="stage" width="1100" height="460"></canvas>
+      <div id="stage" class="stage"></div>
       <div class="overlay online" id="online-overlay"></div>
       <div class="arrows">
         <button id="go-left" class="arrow">◀</button>
@@ -48,7 +48,7 @@
     <div class="char-grid">
       <div class="char-preview">
         <div class="char-header">
-          <canvas id="char-canvas" width="280" height="280"></canvas>
+          <div id="char-preview" class="char-preview-stage character-stage"></div>
           <div class="emotion-control">
             <div class="hint-row">
               <span class="lbl">Эмоция</span>
@@ -103,9 +103,6 @@
   </div>
 </div>
 
-<script src="/static/js/avatar_drawing.js"></script>
-<script src="/static/js/outfitLayers.js"></script>
-<script src="/static/js/characterRenderer.js"></script>
 <script src="/static/js/location.js"></script>
 </body>
 </html>
