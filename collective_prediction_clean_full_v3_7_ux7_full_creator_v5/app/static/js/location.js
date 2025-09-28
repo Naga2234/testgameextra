@@ -614,19 +614,6 @@ function drawUpperOutfit(ctx2, palette, metrics, scale, options={}){
     ctx2.stroke();
   }
 
-  if(colors.trim){
-    const beltHeight=Math.max(1.6*scale, scale);
-    const beltY=torsoY+torsoHeight*0.55;
-    ctx2.fillStyle=colors.trim;
-    ctx2.beginPath();
-    ctx2.moveTo(torsoX+4*scale, beltY);
-    ctx2.quadraticCurveTo(centerX, beltY+0.5*scale, torsoX+torsoWidth-4*scale, beltY);
-    ctx2.lineTo(torsoX+torsoWidth-5*scale, beltY+beltHeight);
-    ctx2.quadraticCurveTo(centerX, beltY+beltHeight+0.5*scale, torsoX+5*scale, beltY+beltHeight);
-    ctx2.closePath();
-    ctx2.fill();
-  }
-
   if(colors.highlight && hasEquip){
     ctx2.strokeStyle=colors.highlight;
     ctx2.lineWidth=0.8*scale;
@@ -729,110 +716,309 @@ function drawLowerOutfit(ctx2, palette, metrics, scale, options={}){
   ctx2.restore();
 }
 
-function drawAccessories(ctx2, palette, metrics, scale, equip={}, phase='front'){
-  const {torsoX, torsoY, torsoWidth, torsoHeight, shoeTop, shoeHeight, footBaseline, centerX, headCy, headRadius}=metrics;
-  if(phase==='back' && equip.cloak){
-    const colors=palette.cloak||{};
-    ctx2.save();
-    const grad=ctx2.createLinearGradient(centerX, torsoY, centerX, footBaseline);
-    grad.addColorStop(0, colors.highlight||colors.base||'#0f3460');
-    grad.addColorStop(0.7, colors.base||'#0f3460');
-    grad.addColorStop(1, colors.shadow||colors.edge||'#071f2a');
-    ctx2.fillStyle=grad;
-    const topY=torsoY+2*scale;
-    ctx2.beginPath();
-    ctx2.moveTo(torsoX-5*scale, topY);
-    ctx2.quadraticCurveTo(centerX-6*scale, headCy+headRadius*0.6, torsoX-4*scale, footBaseline-2*scale);
-    ctx2.quadraticCurveTo(centerX, footBaseline+6*scale, torsoX+torsoWidth+4*scale, footBaseline-2*scale);
-    ctx2.quadraticCurveTo(centerX+6*scale, headCy+headRadius*0.6, torsoX+torsoWidth+5*scale, topY);
-    ctx2.closePath();
-    ctx2.fill();
-    const edgeColor=colors.edge||colors.stroke;
-    if(edgeColor){
-      ctx2.strokeStyle=edgeColor;
-      ctx2.lineWidth=Math.max(1,1.4*scale);
-      ctx2.stroke();
-    }
-    if(colors.lining){
-      ctx2.strokeStyle=colors.lining;
-      ctx2.lineWidth=0.9*scale;
-      ctx2.beginPath();
-      ctx2.moveTo(torsoX-3*scale, topY+2*scale);
-      ctx2.quadraticCurveTo(centerX-5*scale, headCy+headRadius*0.7, torsoX-2*scale, footBaseline-3*scale);
-      ctx2.moveTo(torsoX+torsoWidth+3*scale, topY+2*scale);
-      ctx2.quadraticCurveTo(centerX+5*scale, headCy+headRadius*0.7, torsoX+torsoWidth+2*scale, footBaseline-3*scale);
-      ctx2.stroke();
-    }
-    ctx2.restore();
-    return;
-  }
-
-  if(phase!=='front') return;
-
-  const shoeColors=palette.shoes||{};
+function drawBeltLayer(ctx2, palette, metrics, scale, options={}){
+  const anchors=metrics.anchors||{};
+  const beltAnchor=anchors.belt;
+  if(!beltAnchor) return;
+  const colors=(palette.upper)||{};
+  const beltColor=colors.trim;
+  if(!beltColor) return;
   ctx2.save();
-  const shoeGrad=ctx2.createLinearGradient(centerX, shoeTop, centerX, shoeTop+shoeHeight);
-  shoeGrad.addColorStop(0, shoeColors.highlight||shoeColors.base||'#666');
-  shoeGrad.addColorStop(0.6, shoeColors.base||'#444');
-  shoeGrad.addColorStop(1, shoeColors.shadow||shoeColors.trim||'#222');
-  ctx2.fillStyle=shoeGrad;
-  const leftToe=torsoX+3*scale;
-  const rightToe=torsoX+torsoWidth+5*scale;
+  ctx2.fillStyle=beltColor;
   ctx2.beginPath();
-  ctx2.moveTo(leftToe, shoeTop);
-  ctx2.quadraticCurveTo(leftToe-2*scale, shoeTop+shoeHeight*0.7, leftToe+2*scale, shoeTop+shoeHeight);
-  ctx2.lineTo(rightToe-2*scale, shoeTop+shoeHeight);
-  ctx2.quadraticCurveTo(rightToe+2*scale, shoeTop+shoeHeight*0.7, rightToe-2*scale, shoeTop);
+  ctx2.moveTo(beltAnchor.topLeft.x, beltAnchor.topLeft.y);
+  ctx2.quadraticCurveTo(beltAnchor.topControl.x, beltAnchor.topControl.y, beltAnchor.topRight.x, beltAnchor.topRight.y);
+  ctx2.lineTo(beltAnchor.bottomRight.x, beltAnchor.bottomRight.y);
+  ctx2.quadraticCurveTo(beltAnchor.bottomControl.x, beltAnchor.bottomControl.y, beltAnchor.bottomLeft.x, beltAnchor.bottomLeft.y);
   ctx2.closePath();
   ctx2.fill();
-  if(shoeColors.stroke){
-    ctx2.strokeStyle=shoeColors.stroke;
+  ctx2.restore();
+}
+
+function drawCloakLayer(ctx2, palette, metrics, scale, options={}){
+  const equip=options.equip||{};
+  if(!equip.cloak) return;
+  const {torsoX, torsoY, torsoWidth, footBaseline, centerX, headCy, headRadius}=metrics;
+  const colors=palette.cloak||{};
+  ctx2.save();
+  const grad=ctx2.createLinearGradient(centerX, torsoY, centerX, footBaseline);
+  grad.addColorStop(0, colors.highlight||colors.base||'#0f3460');
+  grad.addColorStop(0.7, colors.base||'#0f3460');
+  grad.addColorStop(1, colors.shadow||colors.edge||'#071f2a');
+  ctx2.fillStyle=grad;
+  const topY=torsoY+2*scale;
+  ctx2.beginPath();
+  ctx2.moveTo(torsoX-5*scale, topY);
+  ctx2.quadraticCurveTo(centerX-6*scale, headCy+headRadius*0.6, torsoX-4*scale, footBaseline-2*scale);
+  ctx2.quadraticCurveTo(centerX, footBaseline+6*scale, torsoX+torsoWidth+4*scale, footBaseline-2*scale);
+  ctx2.quadraticCurveTo(centerX+6*scale, headCy+headRadius*0.6, torsoX+torsoWidth+5*scale, topY);
+  ctx2.closePath();
+  ctx2.fill();
+  const edgeColor=colors.edge||colors.stroke;
+  if(edgeColor){
+    ctx2.strokeStyle=edgeColor;
+    ctx2.lineWidth=Math.max(1,1.4*scale);
+    ctx2.stroke();
+  }
+  if(colors.lining){
+    ctx2.strokeStyle=colors.lining;
+    ctx2.lineWidth=0.9*scale;
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX-3*scale, topY+2*scale);
+    ctx2.quadraticCurveTo(centerX-5*scale, headCy+headRadius*0.7, torsoX-2*scale, footBaseline-3*scale);
+    ctx2.moveTo(torsoX+torsoWidth+3*scale, topY+2*scale);
+    ctx2.quadraticCurveTo(centerX+5*scale, headCy+headRadius*0.7, torsoX+torsoWidth+2*scale, footBaseline-3*scale);
+    ctx2.stroke();
+  }
+  ctx2.restore();
+}
+
+function drawShoesLayer(ctx2, palette, metrics, scale){
+  const anchors=metrics.anchors||{};
+  const feet=anchors.feet;
+  if(!feet) return;
+  const colors=palette.shoes||{};
+  ctx2.save();
+  const shoeGrad=ctx2.createLinearGradient(metrics.centerX, feet.topLeft.y, metrics.centerX, feet.bottomY);
+  shoeGrad.addColorStop(0, colors.highlight||colors.base||'#666');
+  shoeGrad.addColorStop(0.6, colors.base||'#444');
+  shoeGrad.addColorStop(1, colors.shadow||colors.trim||'#222');
+  ctx2.fillStyle=shoeGrad;
+  ctx2.beginPath();
+  ctx2.moveTo(feet.topLeft.x, feet.topLeft.y);
+  ctx2.quadraticCurveTo(feet.controlLeft.x, feet.controlLeft.y, feet.bottomLeft.x, feet.bottomLeft.y);
+  ctx2.lineTo(feet.bottomRight.x, feet.bottomRight.y);
+  ctx2.quadraticCurveTo(feet.controlRight.x, feet.controlRight.y, feet.topRight.x, feet.topRight.y);
+  ctx2.closePath();
+  ctx2.fill();
+  if(colors.stroke){
+    ctx2.strokeStyle=colors.stroke;
     ctx2.lineWidth=Math.max(1,1.2*scale);
     ctx2.stroke();
   }
-  if(shoeColors.trim){
-    ctx2.strokeStyle=shoeColors.trim;
+  if(colors.trim){
+    ctx2.strokeStyle=colors.trim;
     ctx2.lineWidth=0.8*scale;
     ctx2.beginPath();
-    ctx2.moveTo(leftToe+4*scale, shoeTop+shoeHeight*0.35);
-    ctx2.quadraticCurveTo(centerX, shoeTop+shoeHeight*0.15, rightToe-6*scale, shoeTop+shoeHeight*0.35);
+    ctx2.moveTo(feet.trimStart.x, feet.trimStart.y);
+    ctx2.quadraticCurveTo(feet.trimControl.x, feet.trimControl.y, feet.trimEnd.x, feet.trimEnd.y);
     ctx2.stroke();
   }
   ctx2.restore();
+}
 
-  if(!equip.accessory) return;
-
+function drawAccessoryLayer(ctx2, palette, metrics, scale, options={}){
+  const equip=options.equip||{};
   const accColors=palette.accessory||{};
-  const baseColor=accColors.base||'#f8b500';
-  const highlight=accColors.highlight||baseColor;
-  const shadow=accColors.shadow||accColors.stroke||baseColor;
-  const chainColor=accColors.chain||highlight;
-  const medallionRadius=3.4*scale;
-  const chainTop=torsoY+2.5*scale;
-  const chainBottom=torsoY+6.5*scale;
-  ctx2.save();
-  ctx2.strokeStyle=chainColor;
-  ctx2.lineWidth=Math.max(0.9*scale,0.7);
-  ctx2.beginPath();
-  ctx2.moveTo(centerX-6*scale, chainTop);
-  ctx2.quadraticCurveTo(centerX, chainBottom-2*scale, centerX+6*scale, chainTop);
-  ctx2.stroke();
-
-  const radial=ctx2.createRadialGradient(centerX, chainBottom, medallionRadius*0.2, centerX, chainBottom, medallionRadius);
-  radial.addColorStop(0, highlight);
-  radial.addColorStop(0.7, baseColor);
-  radial.addColorStop(1, shadow);
-  ctx2.fillStyle=radial;
-  ctx2.beginPath();
-  ctx2.arc(centerX, chainBottom, medallionRadius, 0, Math.PI*2);
-  ctx2.fill();
-
-  if(accColors.stroke){
-    ctx2.strokeStyle=accColors.stroke;
-    ctx2.lineWidth=Math.max(0.9*scale,0.6);
+  if(equip.accessory){
+    const baseColor=accColors.base||'#f8b500';
+    const highlight=accColors.highlight||baseColor;
+    const shadow=accColors.shadow||accColors.stroke||baseColor;
+    const chainColor=accColors.chain||highlight;
+    const medallionRadius=3.4*scale;
+    const chainTop=metrics.torsoY+2.5*scale;
+    const chainBottom=metrics.torsoY+6.5*scale;
+    ctx2.save();
+    ctx2.strokeStyle=chainColor;
+    ctx2.lineWidth=Math.max(0.9*scale,0.7);
+    ctx2.beginPath();
+    ctx2.moveTo(metrics.centerX-6*scale, chainTop);
+    ctx2.quadraticCurveTo(metrics.centerX, chainBottom-2*scale, metrics.centerX+6*scale, chainTop);
     ctx2.stroke();
+
+    const radial=ctx2.createRadialGradient(metrics.centerX, chainBottom, medallionRadius*0.2, metrics.centerX, chainBottom, medallionRadius);
+    radial.addColorStop(0, highlight);
+    radial.addColorStop(0.7, baseColor);
+    radial.addColorStop(1, shadow);
+    ctx2.fillStyle=radial;
+    ctx2.beginPath();
+    ctx2.arc(metrics.centerX, chainBottom, medallionRadius, 0, Math.PI*2);
+    ctx2.fill();
+
+    if(accColors.stroke){
+      ctx2.strokeStyle=accColors.stroke;
+      ctx2.lineWidth=Math.max(0.9*scale,0.6);
+      ctx2.stroke();
+    }
+    ctx2.restore();
+  }
+
+  if(equip.head){
+    const hatTop=metrics.headCy-metrics.headRadius-4*scale;
+    ctx2.save();
+    ctx2.fillStyle=accColors.shadow||'#e94560';
+    ctx2.fillRect(metrics.headCx-metrics.headRadius, hatTop, metrics.headRadius*2, 4*scale);
+    ctx2.restore();
+  }
+}
+
+function drawHandLayer(ctx2, metrics, options={}, side='left'){
+  const anchors=metrics.anchors||{};
+  const handAnchor=side==='right'?anchors.handR:anchors.handL;
+  if(!handAnchor) return;
+  const skinColor=options.skin;
+  if(!skinColor) return;
+  ctx2.save();
+  ctx2.fillStyle=skinColor;
+  const thickness=handAnchor.thickness;
+  const shoulder=handAnchor.shoulder;
+  const elbow=handAnchor.elbow;
+  const hand=handAnchor.hand;
+  ctx2.beginPath();
+  ctx2.moveTo(shoulder.x-thickness, shoulder.y);
+  ctx2.bezierCurveTo(elbow.x-thickness*0.8, elbow.y, hand.x-thickness*0.6, hand.y-thickness*0.1, hand.x-thickness*0.3, hand.y);
+  ctx2.lineTo(hand.x+thickness*0.3, hand.y);
+  ctx2.bezierCurveTo(hand.x+thickness*0.6, hand.y-thickness*0.1, elbow.x+thickness*0.8, elbow.y, shoulder.x+thickness, shoulder.y);
+  ctx2.closePath();
+  ctx2.fill();
+  ctx2.restore();
+}
+
+function drawFxLayer(ctx2, metrics, options={}){
+  const equip=options.equip||{};
+  const fx=equip.fx;
+  if(!fx) return;
+  ctx2.save();
+  const radius=(metrics.headRadius||10)*1.2;
+  const color=fx.color||'rgba(255,255,255,0.35)';
+  ctx2.strokeStyle=color;
+  ctx2.lineWidth=Math.max(1, 1.2*(options.scale||1));
+  ctx2.beginPath();
+  ctx2.arc(metrics.centerX, metrics.headCy, radius, 0, Math.PI*2);
+  ctx2.stroke();
+  ctx2.restore();
+}
+
+function mirrorAnchorX(target, centerX){
+  if(!target || typeof target!=='object') return;
+  if(Object.prototype.hasOwnProperty.call(target,'x') && typeof target.x==='number'){
+    target.x=centerX-(target.x-centerX);
+  }
+  Object.values(target).forEach(value=>{
+    if(value && typeof value==='object'){
+      mirrorAnchorX(value, centerX);
+    }
+  });
+}
+
+function createCharacterAnchors(metrics, scale, options={}){
+  const {torsoX, torsoWidth, torsoY, torsoHeight, shoeTop, shoeHeight, centerX}=metrics;
+  const shoulderY=options.shoulderY!=null?options.shoulderY:torsoY+4*scale;
+  const handY=options.handY!=null?options.handY:shoeTop-1*scale;
+  const beltHeight=Math.max(1.6*scale, scale);
+  const beltY=torsoY+torsoHeight*0.55;
+  const leftTop=torsoX+3*scale;
+  const rightToe=torsoX+torsoWidth+5*scale;
+  const anchors={
+    belt:{
+      topLeft:{x:torsoX+4*scale, y:beltY},
+      topControl:{x:centerX, y:beltY+0.5*scale},
+      topRight:{x:torsoX+torsoWidth-4*scale, y:beltY},
+      bottomRight:{x:torsoX+torsoWidth-5*scale, y:beltY+beltHeight},
+      bottomControl:{x:centerX, y:beltY+beltHeight+0.5*scale},
+      bottomLeft:{x:torsoX+5*scale, y:beltY+beltHeight}
+    },
+    handL:{
+      shoulder:{x:torsoX+3.5*scale, y:shoulderY},
+      elbow:{x:(torsoX+3.5*scale+torsoX-2*scale)/2, y:shoulderY+(handY-shoulderY)*0.45},
+      hand:{x:torsoX-2*scale, y:handY},
+      thickness:2.4*scale
+    },
+    handR:{
+      shoulder:{x:torsoX+torsoWidth-3.5*scale, y:shoulderY},
+      elbow:{x:(torsoX+torsoWidth-3.5*scale+torsoX+torsoWidth+2*scale)/2, y:shoulderY+(handY-shoulderY)*0.45},
+      hand:{x:torsoX+torsoWidth+2*scale, y:handY},
+      thickness:2.4*scale
+    },
+    feet:{
+      topLeft:{x:leftTop, y:shoeTop},
+      controlLeft:{x:leftTop-2*scale, y:shoeTop+shoeHeight*0.7},
+      bottomLeft:{x:leftTop+2*scale, y:shoeTop+shoeHeight},
+      bottomRight:{x:rightToe-2*scale, y:shoeTop+shoeHeight},
+      controlRight:{x:rightToe+2*scale, y:shoeTop+shoeHeight*0.7},
+      topRight:{x:rightToe-2*scale, y:shoeTop},
+      bottomY:shoeTop+shoeHeight,
+      trimStart:{x:leftTop+4*scale, y:shoeTop+shoeHeight*0.35},
+      trimEnd:{x:rightToe-6*scale, y:shoeTop+shoeHeight*0.35},
+      trimControl:{x:centerX, y:shoeTop+shoeHeight*0.15}
+    }
+  };
+  if(options.flipX){
+    mirrorAnchorX(anchors, centerX);
+  }
+  return anchors;
+}
+
+function drawBodyBase(ctx2, metrics, options={}){
+  const skin=options.skin;
+  if(!skin) return;
+  const scale=options.scale||1;
+  const gender=options.gender||'other';
+  const {torsoX, torsoY, torsoWidth, torsoHeight, hipY, kneeY, shoeTop}=metrics;
+  ctx2.save();
+  ctx2.fillStyle=skin;
+  const drawLeg=(hipX, footX)=>{
+    const thickness=3*scale;
+    const kneeX=(hipX+footX)/2;
+    ctx2.beginPath();
+    ctx2.moveTo(hipX-thickness, hipY);
+    ctx2.quadraticCurveTo(kneeX-thickness*0.8, kneeY, footX-thickness*0.5, shoeTop);
+    ctx2.lineTo(footX+thickness*0.5, shoeTop);
+    ctx2.quadraticCurveTo(kneeX+thickness*0.8, kneeY, hipX+thickness, hipY);
+    ctx2.closePath();
+    ctx2.fill();
+  };
+  drawLeg(torsoX+6*scale, torsoX+5*scale);
+  drawLeg(torsoX+torsoWidth-6*scale, torsoX+torsoWidth-5*scale);
+  if(gender==='female'){
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX, torsoY+2*scale);
+    ctx2.lineTo(torsoX+torsoWidth, torsoY+2*scale);
+    ctx2.lineTo(torsoX+torsoWidth-4*scale, torsoY+torsoHeight);
+    ctx2.lineTo(torsoX+4*scale, torsoY+torsoHeight);
+    ctx2.closePath();
+    ctx2.fill();
+  }else{
+    ctx2.fillRect(torsoX, torsoY, torsoWidth, torsoHeight);
   }
   ctx2.restore();
+}
+
+function characterRenderer(ctx2, metrics, options={}){
+  if(!ctx2) return;
+  const pipeline=['background','shadow','back','bodyBase','legs','feet','torso','belt','handL','head','hair','eyes','accessories','handR','fx'];
+  const palette=options.palette||{};
+  const equip=options.equip||{};
+  const scale=options.scale||1;
+  const faceScale=metrics.faceScale!=null?metrics.faceScale:(metrics.headRadius||36)/36;
+  const hairlineY=metrics.hairlineY!=null?metrics.hairlineY:metrics.headCy-(metrics.headRadius*0.7);
+  const handlers={
+    background:()=>{
+      if(typeof options.backgroundRenderer==='function'){
+        options.backgroundRenderer(ctx2, metrics, options);
+      }
+    },
+    shadow:()=>drawShadowMini(ctx2, metrics.centerX, metrics.footBaseline, scale*0.9),
+    back:()=>drawCloakLayer(ctx2, palette, metrics, scale, options),
+    bodyBase:()=>drawBodyBase(ctx2, metrics, {skin:options.skin, gender:options.gender, scale}),
+    legs:()=>drawLowerOutfit(ctx2, palette, metrics, scale, {equip, gender:options.gender}),
+    feet:()=>drawShoesLayer(ctx2, palette, metrics, scale),
+    torso:()=>drawUpperOutfit(ctx2, palette, metrics, scale, {equip, gender:options.gender}),
+    belt:()=>drawBeltLayer(ctx2, palette, metrics, scale, options),
+    handL:()=>drawHandLayer(ctx2, metrics, {skin:options.skin}, 'left'),
+    head:()=>drawHead(ctx2, metrics.headCx, metrics.headCy, metrics.headRadius, options.skin),
+    hair:()=>drawHair(ctx2, options.style, options.hair, metrics.headCx, hairlineY, faceScale),
+    eyes:()=>drawExpression(ctx2, options.emotion, metrics.headCx, metrics.headCy, options.eyes, faceScale),
+    accessories:()=>drawAccessoryLayer(ctx2, palette, metrics, scale, options),
+    handR:()=>drawHandLayer(ctx2, metrics, {skin:options.skin}, 'right'),
+    fx:()=>drawFxLayer(ctx2, metrics, options)
+  };
+  pipeline.forEach(layerId=>{
+    const handler=handlers[layerId];
+    if(typeof handler==='function'){
+      handler();
+    }
+  });
 }
 
 function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
@@ -858,62 +1044,15 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const torsoWidth = 20*scale;
   const torsoHeight = 28*scale;
 
-  drawShadowMini(ctx2, p.x, footBaseline, scale*0.9);
-
   const shoulderY = torsoY + 4*scale;
   const handY = shoeTop - 1*scale;
   const hipY = torsoY + torsoHeight;
   const kneeY = hipY + (shoeTop - hipY) * 0.55;
 
-  function drawArm(startX, endX){
-    const thickness = 2.4*scale;
-    const elbowX = (startX + endX) / 2;
-    const elbowY = shoulderY + (handY - shoulderY) * 0.45;
-    ctx2.beginPath();
-    ctx2.moveTo(startX - thickness, shoulderY);
-    ctx2.bezierCurveTo(elbowX - thickness * 0.8, elbowY, endX - thickness * 0.6, handY - thickness * 0.1, endX - thickness * 0.3, handY);
-    ctx2.lineTo(endX + thickness * 0.3, handY);
-    ctx2.bezierCurveTo(endX + thickness * 0.6, handY - thickness * 0.1, elbowX + thickness * 0.8, elbowY, startX + thickness, shoulderY);
-    ctx2.closePath();
-    ctx2.fill();
-  }
-
-  function drawLeg(hipX, footX){
-    const thickness = 3*scale;
-    const kneeX = (hipX + footX) / 2;
-    ctx2.beginPath();
-    ctx2.moveTo(hipX - thickness, hipY);
-    ctx2.quadraticCurveTo(kneeX - thickness * 0.8, kneeY, footX - thickness * 0.5, shoeTop);
-    ctx2.lineTo(footX + thickness * 0.5, shoeTop);
-    ctx2.quadraticCurveTo(kneeX + thickness * 0.8, kneeY, hipX + thickness, hipY);
-    ctx2.closePath();
-    ctx2.fill();
-  }
-
-  ctx2.fillStyle=skin;
-  drawLeg(torsoX + 6*scale, torsoX + 5*scale);
-  drawLeg(torsoX + torsoWidth - 6*scale, torsoX + torsoWidth - 5*scale);
-
-  if(genderKey==='female'){
-    ctx2.beginPath();
-    ctx2.moveTo(torsoX, torsoY+2*scale);
-    ctx2.lineTo(torsoX+torsoWidth, torsoY+2*scale);
-    ctx2.lineTo(torsoX+torsoWidth-4*scale, torsoY+torsoHeight);
-    ctx2.lineTo(torsoX+4*scale, torsoY+torsoHeight);
-    ctx2.closePath();
-    ctx2.fill();
-  }else{
-    ctx2.fillRect(torsoX, torsoY, torsoWidth, torsoHeight);
-  }
-
-  drawArm(torsoX + 3.5*scale, torsoX - 2*scale);
-  drawArm(torsoX + torsoWidth - 3.5*scale, torsoX + torsoWidth + 2*scale);
-
   const isLargePreview = !withName && scale >= SCALE_PREVIEW;
   const headRadius = (isLargePreview ? 12 : 6) * scale;
   const headCx = p.x;
   const headCy = by + 10*scale;
-  const headTop = headCy - headRadius;
   const metrics={
     torsoX,
     torsoY,
@@ -930,22 +1069,24 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
     headRadius
   };
 
-  drawAccessories(ctx2, outfitPalette, metrics, scale, equip, 'back');
-  drawHead(ctx2, headCx, headCy, headRadius, skin);
+  metrics.faceScale = headRadius / 36;
+  metrics.hairlineY = headCy - (headRadius * 0.7);
+  metrics.shoulderY = shoulderY;
+  metrics.handY = handY;
+  metrics.anchors = createCharacterAnchors(metrics, scale, {shoulderY, handY, flipX: !!p.flipX});
 
-  drawLowerOutfit(ctx2, outfitPalette, metrics, scale, {equip, gender:genderKey});
-  drawUpperOutfit(ctx2, outfitPalette, metrics, scale, {equip, gender:genderKey});
-  drawAccessories(ctx2, outfitPalette, metrics, scale, equip, 'front');
-  const faceScale = headRadius / 36;
-  const hairTop = headCy - (headRadius * 0.7);
-  drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
-  drawExpression(ctx2, emotion, headCx, headCy, eyes, faceScale);
-  if(p.equip && p.equip.head){
-    ctx2.fillStyle="#e94560";
-    const hatTop = headTop - 4*scale;
-    ctx2.fillRect(headCx - headRadius, hatTop, headRadius * 2, 4*scale);
-  }
-  // Accessories handled in drawAccessories
+  characterRenderer(ctx2, metrics, {
+    skin,
+    hair,
+    eyes,
+    style,
+    emotion,
+    palette: outfitPalette,
+    equip,
+    gender: genderKey,
+    scale,
+    flipX: !!p.flipX
+  });
 
   if(withName){
     const now=Date.now();
