@@ -131,6 +131,7 @@
   </div>
 
 <script src="/static/js/avatar_drawing.js"></script>
+<script src="/static/js/characterRenderer.js"></script>
 <script>
 // Helpers
 async function api(url, method="GET", body=null){
@@ -180,10 +181,6 @@ function updateEmotionBadge(){
     previewEmotionEl.dataset.emotion='';
   }
 }
-const GENDER_OUTFITS={
-  male:{primary:'#3a6ea5',secondary:'#2e4f79',accent:'#1f2f57'},
-  female:{primary:'#f19ad9',secondary:'#d16ec7',accent:'#ffd6ef'},
-  other:{primary:'#4c8fca',secondary:'#3a6aa3',accent:'#9fd9ff'}
 };
 
 // Hairstyles catalog by gender
@@ -355,15 +352,6 @@ if(genderSelect){
 
 // Preview drawing
 const pv=document.getElementById('preview'), pctx=pv.getContext('2d');
-const { drawHead, drawHair, drawExpression } = window.AvatarDrawing || {};
-function drawShadow(ctx, cx, cy){
-  ctx.save();
-  ctx.fillStyle='rgba(12,16,32,0.32)';
-  ctx.beginPath();
-  ctx.ellipse(cx, cy, 88, 22, 0, 0, Math.PI*2);
-  ctx.fill();
-  ctx.restore();
-}
 function hairLabel(style){
   const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",mohawk:"Ирокез",
              curly:"Кудри",afro:"Афро",ponytail:"Хвост",pixie:"Пикси",bob:"Каре",long:"Длинные",
@@ -371,71 +359,25 @@ function hairLabel(style){
   return map[style]||style;
 }
 function redrawPreview(){
-  if(!(drawHead && drawHair && drawExpression)) return;
-  pctx.clearRect(0,0,pv.width,pv.height);
-  const cx=pv.width/2, top=84;
-  drawShadow(pctx, cx, pv.height-38);
+  const renderer = window.CharacterRenderer;
+  if(!renderer || typeof renderer.draw !== 'function'){
+    return;
+  }
   const gender=genderValue();
-  const outfit=GENDER_OUTFITS[gender]||GENDER_OUTFITS.other;
-
-  const headRadius = 36;
-  const headCy = top - 18;
-  const previewFaceScale = headRadius / 36;
-  drawHead(pctx, cx, headCy, headRadius, state.skin);
-
-  const bodyTop = top+12;
-  const bodyHeight = gender==='female'?90:96;
-  const bodyWidth = gender==='female'?48:52;
-  const half=bodyWidth/2;
-  const bodyGradient = pctx.createLinearGradient(cx, bodyTop, cx, bodyTop+bodyHeight);
-  bodyGradient.addColorStop(0, state.skin);
-  bodyGradient.addColorStop(1, '#c78d5b');
-  pctx.fillStyle=bodyGradient;
-  pctx.beginPath();
-  if(gender==='female'){
-    pctx.moveTo(cx-half*0.95, bodyTop+20);
-    pctx.quadraticCurveTo(cx, bodyTop-8, cx+half*0.95, bodyTop+20);
-    pctx.lineTo(cx+half*0.7, bodyTop+bodyHeight-6);
-    pctx.lineTo(cx-half*0.7, bodyTop+bodyHeight-6);
-    pctx.closePath();
-  }else{
-    pctx.rect(cx-half, bodyTop, bodyWidth, bodyHeight);
-  }
-  pctx.fill();
-
-  if(gender==='female'){
-    const dressGrad = pctx.createLinearGradient(cx, bodyTop+8, cx, bodyTop+bodyHeight-4);
-    dressGrad.addColorStop(0, outfit.primary);
-    dressGrad.addColorStop(1, outfit.secondary);
-    pctx.fillStyle=dressGrad;
-    pctx.beginPath();
-    pctx.moveTo(cx-half*0.92, bodyTop+24);
-    pctx.quadraticCurveTo(cx, bodyTop+bodyHeight*0.32, cx+half*0.92, bodyTop+24);
-    pctx.lineTo(cx+half*0.68, bodyTop+bodyHeight-10);
-    pctx.lineTo(cx-half*0.68, bodyTop+bodyHeight-10);
-    pctx.closePath();
-    pctx.fill();
-    pctx.fillStyle=outfit.accent;
-    const beltWidth=bodyWidth*0.9;
-    pctx.fillRect(cx-beltWidth/2, bodyTop+bodyHeight*0.48, beltWidth, 6);
-    pctx.fillStyle=outfit.primary;
-    pctx.beginPath();
-    pctx.ellipse(cx-half*0.88, bodyTop+34, 9, 14, 0, 0, Math.PI*2);
-    pctx.ellipse(cx+half*0.88, bodyTop+34, 9, 14, 0, 0, Math.PI*2);
-    pctx.fill();
-  }else{
-    pctx.fillStyle=outfit.primary;
-    pctx.fillRect(cx-half, bodyTop+8, bodyWidth, bodyHeight*0.62);
-    pctx.fillStyle=outfit.secondary;
-    pctx.fillRect(cx-half+6, bodyTop+bodyHeight*0.62, bodyWidth-12, bodyHeight*0.38);
-    pctx.fillStyle=outfit.accent;
-    pctx.fillRect(cx-half, bodyTop+bodyHeight*0.62-6, bodyWidth, 6);
-  }
-
-  drawExpression(pctx, state.emotion, cx, headCy, state.eyes, previewFaceScale);
-  const hairTop = headCy - (headRadius * 0.7);
-  drawHair(pctx, state.style, state.hair, cx, hairTop, previewFaceScale);
+  const normalized = renderer.normalizeAppearance ? renderer.normalizeAppearance(state) : Object.assign({}, state);
+  const appearance = Object.assign({}, normalized);
+  pctx.clearRect(0,0,pv.width,pv.height);
+  const character={
+    name:'',
+    x:pv.width/2,
+    y:pv.height/2+40,
+    appearance,
+    equip:{},
+    gender
+  };
+  renderer.draw(pctx, character, {scale:3, withName:false, preview:true});
 }
+
 makeSwatches('skin-sw', SKINS, 'skin');
 makeSwatches('eyes-sw', EYES, 'eyes');
 makeSwatches('hair-sw', HAIRS, 'hair');
