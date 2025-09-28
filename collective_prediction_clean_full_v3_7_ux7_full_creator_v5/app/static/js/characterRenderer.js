@@ -451,6 +451,13 @@
       const kneeOuterX=kneeX + direction*kneeOuter;
       const ankleInnerX=footX - direction*1.35*scale;
       const ankleOuterX=footX + direction*1.9*scale;
+      const heelInset=0.8*scale;
+      const toeReach=3.1*scale;
+      const footRise=Math.min(shoeHeight*0.68, 2.7*scale);
+      const footY=Math.min(ankleY + footRise, footBaseline - 0.35*scale);
+      const footInnerX=ankleInnerX - direction*heelInset;
+      const footOuterX=ankleOuterX + direction*toeReach;
+      const footMidX=(footInnerX + footOuterX)/2;
       const grad=ctx.createLinearGradient(hipX, hipCapY-0.4*scale, hipX, ankleY);
       grad.addColorStop(0, skinHighlight);
       grad.addColorStop(0.5, appearance.skin);
@@ -480,6 +487,30 @@
       ctx.quadraticCurveTo(kneeInnerX, kneeY + 0.6*scale, ankleInnerX + direction*0.25*scale, ankleY - 0.4*scale);
       ctx.stroke();
       ctx.restore();
+
+      if(!equip || !equip.shoes){
+        const footGrad=ctx.createLinearGradient(footMidX, ankleY, footMidX, footY);
+        footGrad.addColorStop(0, skinHighlight);
+        footGrad.addColorStop(0.55, appearance.skin);
+        footGrad.addColorStop(1, skinShadow);
+        ctx.fillStyle=footGrad;
+        ctx.beginPath();
+        ctx.moveTo(ankleInnerX, ankleY);
+        ctx.quadraticCurveTo(footInnerX, ankleY + (footY - ankleY)*0.45, footInnerX - direction*0.15*scale, footY - 0.25*scale);
+        ctx.quadraticCurveTo(footMidX, footY + 0.28*scale, footOuterX, footY - 0.18*scale);
+        ctx.quadraticCurveTo(footOuterX - direction*0.3*scale, ankleY + (footY - ankleY)*0.28, ankleOuterX, ankleY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.save();
+        ctx.strokeStyle=skinShadow;
+        ctx.globalAlpha=0.35;
+        ctx.lineWidth=0.55*scale;
+        ctx.beginPath();
+        ctx.moveTo(ankleInnerX - direction*0.25*scale, ankleY + (footY - ankleY)*0.5);
+        ctx.quadraticCurveTo(footMidX, ankleY + (footY - ankleY)*0.35, ankleOuterX + direction*0.35*scale, ankleY + (footY - ankleY)*0.42);
+        ctx.stroke();
+        ctx.restore();
+      }
       return {
         direction,
         hipX,
@@ -494,7 +525,16 @@
         ankleX:footX,
         ankleY,
         ankleInnerX,
-        ankleOuterX
+        ankleOuterX,
+        footInnerX,
+        footOuterX,
+        footY,
+        skinColors:{
+          highlight:skinHighlight,
+          base:appearance.skin,
+          shadow:skinShadow,
+          deepShadow:skinDeepShadow
+        }
       };
     };
 
