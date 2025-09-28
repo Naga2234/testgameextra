@@ -283,6 +283,37 @@
     return mergeOutfitPalette(base, equip || {});
   }
 
+  function normalizeHexColor(value){
+    if(typeof value !== 'string') return null;
+    const match=value.trim().match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+    if(!match) return null;
+    let raw=match[1];
+    if(raw.length===3){
+      raw=raw.split('').map(ch=>ch+ch).join('');
+    }
+    return raw.toLowerCase();
+  }
+
+  function shadeColor(hex, amount){
+    const normalized=normalizeHexColor(hex);
+    if(!normalized || !Number.isFinite(amount)) return hex;
+    const clamp=v=>Math.max(0, Math.min(255, v));
+    let r=parseInt(normalized.slice(0,2),16);
+    let g=parseInt(normalized.slice(2,4),16);
+    let b=parseInt(normalized.slice(4,6),16);
+    const apply=(channel)=>{
+      if(amount>=0){
+        return clamp(Math.round(channel + (255-channel)*amount));
+      }
+      return clamp(Math.round(channel + channel*amount));
+    };
+    r=apply(r);
+    g=apply(g);
+    b=apply(b);
+    const toHex=v=>v.toString(16).padStart(2,'0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
   function drawShadow(ctx, x, baselineY, scale){
     ctx.save();
     ctx.fillStyle='rgba(0,0,0,0.2)';
@@ -294,59 +325,72 @@
   }
 
   function drawUpperOutfit(ctx, palette, metrics, scale, options){
-    const {torsoX, torsoY, torsoWidth, torsoHeight, centerX}=metrics;
+    const {centerX, torsoY, torsoHeight}=metrics;
+    const contour=metrics.torsoContour || {};
+    const neckBaseY=contour.neckBaseY != null ? contour.neckBaseY : torsoY;
+    const shoulderY=contour.shoulderY != null ? contour.shoulderY : torsoY + 4*scale;
+    const chestY=contour.chestY != null ? contour.chestY : torsoY + 8*scale;
+    const waistY=contour.waistY != null ? contour.waistY : torsoY + torsoHeight*0.55;
+    const hipY=(contour.hipY != null ? contour.hipY : torsoY + torsoHeight) - 1.1*scale;
+    const neckHalf=contour.neckHalf != null ? contour.neckHalf : (metrics.torsoWidth||20*scale)/2;
+    const shoulderHalf=contour.shoulderHalf != null ? contour.shoulderHalf : neckHalf + 2*scale;
+    const chestHalf=contour.chestHalf != null ? contour.chestHalf : shoulderHalf-0.8*scale;
+    const waistHalf=contour.waistHalf != null ? contour.waistHalf : chestHalf-2.4*scale;
+    const hipHalf=contour.hipHalf != null ? contour.hipHalf : waistHalf+1.4*scale;
     const {equip={}, gender='other'}=options || {};
     const hasEquip=!!equip.upper;
     const colors=palette.upper||{};
     const baseColor=colors.base||'#5c7ab2';
     const highlight=colors.highlight||baseColor;
     const shadow=colors.shadow||baseColor;
+    const collarDrop=hasEquip ? 0.45*scale : 0.2*scale;
+    const collarDip=hasEquip ? 1.8*scale : 1.1*scale;
+    const outerOffset=hasEquip ? 1.6*scale : 0.9*scale;
+    const hemSpread=hasEquip ? 1.8*scale : 1.2*scale;
+    const waistEase=hasEquip ? 0.6*scale : (gender==='female' ? 0.4*scale : 0.1*scale);
     ctx.save();
-    const grad=ctx.createLinearGradient(torsoX, torsoY, torsoX, torsoY+torsoHeight);
+    const grad=ctx.createLinearGradient(centerX, neckBaseY-collarDip, centerX, hipY+3*scale);
     grad.addColorStop(0, highlight);
     grad.addColorStop(0.55, baseColor);
     grad.addColorStop(1, shadow);
     ctx.fillStyle=grad;
     ctx.beginPath();
-    if(!hasEquip && gender==='female'){
-      ctx.moveTo(torsoX-2*scale, torsoY+5*scale);
-      ctx.quadraticCurveTo(centerX, torsoY-4*scale, torsoX+torsoWidth+2*scale, torsoY+5*scale);
-      ctx.lineTo(torsoX+torsoWidth-5*scale, torsoY+torsoHeight-1*scale);
-      ctx.quadraticCurveTo(centerX, torsoY+torsoHeight+5*scale, torsoX+5*scale, torsoY+torsoHeight-1*scale);
-    }else{
-      ctx.moveTo(torsoX-2*scale, torsoY+4*scale);
-      ctx.quadraticCurveTo(centerX, torsoY-2*scale, torsoX+torsoWidth+2*scale, torsoY+4*scale);
-      ctx.lineTo(torsoX+torsoWidth-3*scale, torsoY+torsoHeight-3*scale);
-      ctx.quadraticCurveTo(centerX, torsoY+torsoHeight+1.5*scale, torsoX+3*scale, torsoY+torsoHeight-3*scale);
-    }
+    ctx.moveTo(centerX - neckHalf - outerOffset*0.4, neckBaseY - collarDrop);
+    ctx.quadraticCurveTo(centerX - neckHalf*0.6, neckBaseY - collarDrop - collarDip, centerX, neckBaseY - collarDrop - collarDip*0.75);
+    ctx.quadraticCurveTo(centerX + neckHalf*0.6, neckBaseY - collarDrop - collarDip, centerX + neckHalf + outerOffset*0.4, neckBaseY - collarDrop);
+    ctx.quadraticCurveTo(centerX + shoulderHalf + outerOffset, shoulderY, centerX + chestHalf + outerOffset*0.5, chestY);
+    ctx.quadraticCurveTo(centerX + waistHalf + waistEase, waistY + 0.4*scale, centerX + hipHalf + hemSpread, hipY);
+    ctx.quadraticCurveTo(centerX, hipY + 0.8*scale, centerX - hipHalf - hemSpread, hipY);
+    ctx.quadraticCurveTo(centerX - (waistHalf + waistEase), waistY + 0.4*scale, centerX - (chestHalf + outerOffset*0.5), chestY);
+    ctx.quadraticCurveTo(centerX - (shoulderHalf + outerOffset), shoulderY, centerX - neckHalf - outerOffset*0.4, neckBaseY - collarDrop);
     ctx.closePath();
     ctx.fill();
 
     if(colors.stroke){
       ctx.strokeStyle=colors.stroke;
-      ctx.lineWidth=Math.max(1,1.2*scale);
+      ctx.lineWidth=Math.max(1,1.25*scale);
       ctx.stroke();
     }
 
     if(colors.trim){
       const beltHeight=Math.max(1.6*scale, scale);
-      const beltY=torsoY+torsoHeight*0.55;
+      const beltY=waistY + 0.6*scale;
       ctx.fillStyle=colors.trim;
       ctx.beginPath();
-      ctx.moveTo(torsoX+4*scale, beltY);
-      ctx.quadraticCurveTo(centerX, beltY+0.5*scale, torsoX+torsoWidth-4*scale, beltY);
-      ctx.lineTo(torsoX+torsoWidth-5*scale, beltY+beltHeight);
-      ctx.quadraticCurveTo(centerX, beltY+beltHeight+0.5*scale, torsoX+5*scale, beltY+beltHeight);
+      ctx.moveTo(centerX - waistHalf - 0.8*scale, beltY);
+      ctx.quadraticCurveTo(centerX, beltY + 0.4*scale, centerX + waistHalf + 0.8*scale, beltY);
+      ctx.lineTo(centerX + waistHalf + 0.7*scale, beltY + beltHeight);
+      ctx.quadraticCurveTo(centerX, beltY + beltHeight + 0.35*scale, centerX - waistHalf - 0.7*scale, beltY + beltHeight);
       ctx.closePath();
       ctx.fill();
     }
 
     if(colors.highlight && hasEquip){
       ctx.strokeStyle=colors.highlight;
-      ctx.lineWidth=0.8*scale;
+      ctx.lineWidth=0.85*scale;
       ctx.beginPath();
-      ctx.moveTo(centerX, torsoY+3*scale);
-      ctx.lineTo(centerX, torsoY+torsoHeight-4*scale);
+      ctx.moveTo(centerX, neckBaseY - collarDrop - collarDip*0.5);
+      ctx.quadraticCurveTo(centerX, waistY + 0.6*scale, centerX, hipY - 0.3*scale);
       ctx.stroke();
     }
 
@@ -354,35 +398,64 @@
   }
 
   function drawLowerOutfit(ctx, palette, metrics, scale, options){
-    const {torsoX, torsoWidth, hipY, kneeY, shoeTop, centerX}=metrics;
+    const {hipY, kneeY, shoeTop, centerX}=metrics;
+    const contour=metrics.torsoContour || {};
+    const legProfiles=metrics.legs || {};
+    const leftLeg=legProfiles.left;
+    const rightLeg=legProfiles.right;
     const {equip={}, gender='other'}=options || {};
     const hasEquip=!!equip.lower;
     const colors=palette.lower||{};
     const baseColor=colors.base||'#4a668d';
     const highlight=colors.highlight||baseColor;
     const shadow=colors.shadow||baseColor;
+    const waistY=contour.waistY != null ? contour.waistY : (hipY-6*scale);
+    const hipTop=(contour.hipY != null ? contour.hipY : hipY) - 0.4*scale;
     ctx.save();
-    const grad=ctx.createLinearGradient(torsoX, hipY, torsoX, shoeTop);
+    const grad=ctx.createLinearGradient(centerX, waistY, centerX, shoeTop);
     grad.addColorStop(0, highlight);
     grad.addColorStop(0.65, baseColor);
     grad.addColorStop(1, shadow);
-    const drawTrim=()=>{
-      if(!colors.trim) return;
-      ctx.strokeStyle=colors.trim;
-      ctx.lineWidth=0.8*scale;
+
+    const fallback=()=>{
+      ctx.fillStyle=grad;
+      const torsoX=metrics.torsoX || (centerX-(metrics.torsoWidth||20*scale)/2);
+      const torsoWidth=metrics.torsoWidth || 20*scale;
+      const legInset=3*scale;
+      const crotchWidth=4*scale;
+      const legWidth=(torsoWidth-crotchWidth)/2;
       ctx.beginPath();
-      ctx.moveTo(torsoX+4*scale, hipY+1.5*scale);
-      ctx.quadraticCurveTo(centerX, hipY+4*scale, torsoX+torsoWidth-4*scale, hipY+1.5*scale);
-      ctx.stroke();
+      ctx.moveTo(torsoX+legInset, hipY);
+      ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.2, kneeY, torsoX+4*scale, shoeTop);
+      ctx.lineTo(torsoX+12*scale, shoeTop);
+      ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.8, kneeY-2*scale, centerX-crotchWidth/2, hipY+2*scale);
+      ctx.lineTo(centerX-crotchWidth/2, hipY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(centerX+crotchWidth/2, hipY);
+      ctx.lineTo(centerX+crotchWidth/2, hipY+2*scale);
+      ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.8, kneeY-2*scale, torsoX+torsoWidth-4*scale, shoeTop);
+      ctx.lineTo(torsoX+torsoWidth-4*scale, shoeTop);
+      ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.2, kneeY, torsoX+torsoWidth-legInset, hipY);
+      ctx.closePath();
+      ctx.fill();
     };
 
+    if(!leftLeg || !rightLeg){
+      fallback();
+      ctx.restore();
+      return;
+    }
+
+    ctx.fillStyle=grad;
+
     if(!hasEquip && gender==='female'){
-      ctx.fillStyle=grad;
       ctx.beginPath();
-      ctx.moveTo(torsoX+2*scale, hipY);
-      ctx.quadraticCurveTo(centerX, hipY+6*scale, torsoX+torsoWidth-2*scale, hipY);
-      ctx.lineTo(torsoX+torsoWidth+4*scale, shoeTop-1*scale);
-      ctx.quadraticCurveTo(centerX, shoeTop+4*scale, torsoX-0.5*scale, shoeTop-1*scale);
+      ctx.moveTo(leftLeg.hipOuterX - 1.1*scale, hipTop);
+      ctx.quadraticCurveTo(centerX, hipTop + 1.7*scale, rightLeg.hipOuterX + 1.1*scale, hipTop);
+      ctx.quadraticCurveTo(rightLeg.ankleOuterX + 3.2*scale, shoeTop + 3.5*scale, centerX, shoeTop + 6.2*scale);
+      ctx.quadraticCurveTo(leftLeg.ankleOuterX - 3.2*scale, shoeTop + 3.5*scale, leftLeg.hipOuterX - 1.1*scale, hipTop);
       ctx.closePath();
       ctx.fill();
       if(colors.stroke){
@@ -390,54 +463,48 @@
         ctx.lineWidth=Math.max(1,1.1*scale);
         ctx.stroke();
       }
-      drawTrim();
+      if(colors.trim){
+        ctx.strokeStyle=colors.trim;
+        ctx.lineWidth=0.85*scale;
+        ctx.beginPath();
+        ctx.moveTo(leftLeg.hipOuterX - 0.8*scale, hipTop + 0.6*scale);
+        ctx.quadraticCurveTo(centerX, hipTop + 2.2*scale, rightLeg.hipOuterX + 0.8*scale, hipTop + 0.6*scale);
+        ctx.stroke();
+      }
       ctx.restore();
       return;
     }
 
-    const legInset=3*scale;
-    const crotchWidth=4*scale;
-    const legWidth=(torsoWidth-crotchWidth)/2;
-    ctx.fillStyle=grad;
-
+    const outerInset=hasEquip ? 1.3*scale : 0.8*scale;
+    const seamInset=hasEquip ? 1.1*scale : 0.7*scale;
     ctx.beginPath();
-    ctx.moveTo(torsoX+legInset, hipY);
-    ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.2, kneeY, torsoX+4*scale, shoeTop);
-    ctx.lineTo(torsoX+12*scale, shoeTop);
-    ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.8, kneeY-2*scale, centerX-crotchWidth/2, hipY+2*scale);
-    ctx.lineTo(centerX-crotchWidth/2, hipY);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(centerX+crotchWidth/2, hipY);
-    ctx.lineTo(centerX+crotchWidth/2, hipY+2*scale);
-    ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.8, kneeY-2*scale, torsoX+torsoWidth-4*scale, shoeTop);
-    ctx.lineTo(torsoX+torsoWidth-4*scale, shoeTop);
-    ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.2, kneeY, torsoX+torsoWidth-legInset, hipY);
+    ctx.moveTo(leftLeg.hipOuterX - outerInset, hipTop);
+    ctx.quadraticCurveTo(leftLeg.kneeOuterX - outerInset*0.4, kneeY + 0.2*scale, leftLeg.ankleOuterX - outerInset*0.1, shoeTop);
+    ctx.lineTo(leftLeg.ankleInnerX + seamInset*0.4, shoeTop);
+    ctx.quadraticCurveTo(leftLeg.kneeInnerX + seamInset*0.35, kneeY, centerX - seamInset*0.45, hipY - 0.2*scale);
+    ctx.quadraticCurveTo(centerX, hipY + 0.5*scale, centerX + seamInset*0.45, hipY - 0.2*scale);
+    ctx.quadraticCurveTo(rightLeg.kneeInnerX - seamInset*0.35, kneeY, rightLeg.ankleInnerX - seamInset*0.4, shoeTop);
+    ctx.lineTo(rightLeg.ankleOuterX + outerInset*0.1, shoeTop);
+    ctx.quadraticCurveTo(rightLeg.kneeOuterX + outerInset*0.4, kneeY + 0.2*scale, rightLeg.hipOuterX + outerInset, hipTop);
+    ctx.quadraticCurveTo(centerX, hipTop + 1.4*scale, leftLeg.hipOuterX - outerInset, hipTop);
     ctx.closePath();
     ctx.fill();
 
     if(colors.stroke){
       ctx.strokeStyle=colors.stroke;
       ctx.lineWidth=Math.max(1,1.05*scale);
-
-      ctx.beginPath();
-      ctx.moveTo(torsoX+legInset, hipY);
-      ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.2, kneeY, torsoX+4*scale, shoeTop);
-      ctx.lineTo(torsoX+12*scale, shoeTop);
-      ctx.quadraticCurveTo(torsoX+legInset+legWidth*0.8, kneeY-2*scale, centerX-crotchWidth/2, hipY+2*scale);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(centerX+crotchWidth/2, hipY+2*scale);
-      ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.8, kneeY-2*scale, torsoX+torsoWidth-4*scale, shoeTop);
-      ctx.lineTo(torsoX+torsoWidth-4*scale, shoeTop);
-      ctx.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.2, kneeY, torsoX+torsoWidth-legInset, hipY);
       ctx.stroke();
     }
 
-    drawTrim();
+    if(colors.trim){
+      ctx.strokeStyle=colors.trim;
+      ctx.lineWidth=0.8*scale;
+      ctx.beginPath();
+      ctx.moveTo(centerX, hipTop + 0.4*scale);
+      ctx.quadraticCurveTo(centerX, hipY + 0.8*scale, centerX, shoeTop-0.8*scale);
+      ctx.stroke();
+    }
+
     ctx.restore();
   }
 
@@ -579,67 +646,227 @@
     const torsoY = baseY + 20*scale;
     const torsoWidth = 20*scale;
     const torsoHeight = 28*scale;
+    const centerX = x;
+    const defaultPreview = opts.preview || (!withName && scale >= (opts.previewScaleThreshold || 2.7));
+    const headRadiusMultiplier = opts.headRadiusMultiplier != null ? opts.headRadiusMultiplier : (defaultPreview ? 12 : 6.5);
+    const headRadius = headRadiusMultiplier * scale;
+    const headCx = centerX;
+    const headCy = torsoY - headRadius - 1.2*scale;
+    const headTop = headCy - headRadius;
+    const rawNeckTop = headCy + headRadius - Math.max(2.4*scale, headRadius*0.24);
+    const neckBaseY = torsoY + 1.6*scale;
+    const neckTopY = Math.min(rawNeckTop, neckBaseY - 0.8*scale);
+    const neckWidth = Math.max(6*scale, headRadius*0.78);
+    const neckHalf = neckWidth/2;
 
     if(opts.shadow !== false){
       drawShadow(ctx, x, footBaseline, scale*0.9);
     }
 
     const shoulderY = torsoY + 4*scale;
-    const handY = shoeTop - 1*scale;
+    const chestY = torsoY + 9*scale;
+    const waistY = torsoY + torsoHeight*0.55;
     const hipY = torsoY + torsoHeight;
+    const hipSurfaceY = hipY - 0.6*scale;
+    const handY = shoeTop - 1*scale;
     const kneeY = hipY + (shoeTop - hipY) * 0.55;
 
-    ctx.fillStyle = appearance.skin;
+    const skinHighlight=shadeColor(appearance.skin, 0.16);
+    const skinShadow=shadeColor(appearance.skin, -0.22);
+    const skinDeepShadow=shadeColor(appearance.skin, -0.32);
 
     const drawArm=(startX, endX)=>{
-      const thickness = 2.4*scale;
-      const elbowX = (startX + endX) / 2;
-      const elbowY = shoulderY + (handY - shoulderY) * 0.45;
+      const direction=endX>=startX?1:-1;
+      const elbowX=startX+(endX-startX)*0.58;
+      const elbowY=shoulderY+(handY-shoulderY)*0.44;
+      const wristY=handY-0.3*scale;
+      const upperWidth=3.4*scale;
+      const forearmWidth=2.6*scale;
+      const wristWidth=1.8*scale;
+      const grad=ctx.createLinearGradient(startX, shoulderY, endX, handY);
+      grad.addColorStop(0, skinHighlight);
+      grad.addColorStop(0.45, appearance.skin);
+      grad.addColorStop(1, skinShadow);
+      ctx.fillStyle=grad;
       ctx.beginPath();
-      ctx.moveTo(startX - thickness, shoulderY);
-      ctx.bezierCurveTo(elbowX - thickness * 0.8, elbowY, endX - thickness * 0.6, handY - thickness * 0.1, endX - thickness * 0.3, handY);
-      ctx.lineTo(endX + thickness * 0.3, handY);
-      ctx.bezierCurveTo(endX + thickness * 0.6, handY - thickness * 0.1, elbowX + thickness * 0.8, elbowY, startX + thickness, shoulderY);
+      ctx.moveTo(startX - direction*upperWidth*0.35, shoulderY - 0.2*scale);
+      ctx.quadraticCurveTo(startX - direction*upperWidth, shoulderY + 2.8*scale, elbowX - direction*forearmWidth*0.75, elbowY);
+      ctx.quadraticCurveTo(endX - direction*wristWidth*1.1, wristY, endX - direction*wristWidth*0.85, handY);
+      ctx.quadraticCurveTo(endX + direction*wristWidth*0.85, handY, endX + direction*wristWidth*1.1, wristY);
+      ctx.quadraticCurveTo(elbowX + direction*forearmWidth*0.75, elbowY, startX + direction*upperWidth, shoulderY + 2.8*scale);
+      ctx.quadraticCurveTo(startX + direction*upperWidth*0.4, shoulderY - 0.35*scale, startX - direction*upperWidth*0.35, shoulderY - 0.2*scale);
       ctx.closePath();
       ctx.fill();
+      ctx.save();
+      ctx.strokeStyle=direction>0?skinShadow:skinHighlight;
+      ctx.lineWidth=0.7*scale;
+      ctx.beginPath();
+      ctx.moveTo(elbowX + direction*forearmWidth*0.65, elbowY + 0.25*scale);
+      ctx.quadraticCurveTo(endX + direction*wristWidth, wristY + 0.4*scale, endX + direction*wristWidth*0.85, handY - 0.15*scale);
+      ctx.stroke();
+      ctx.strokeStyle=skinHighlight;
+      ctx.globalAlpha=0.55;
+      ctx.beginPath();
+      ctx.moveTo(startX - direction*upperWidth*0.45, shoulderY + 0.9*scale);
+      ctx.quadraticCurveTo(elbowX - direction*forearmWidth*0.85, elbowY, endX - direction*wristWidth*1.05, wristY + 0.25*scale);
+      ctx.stroke();
+      ctx.restore();
+      return {
+        direction,
+        shoulderX:startX,
+        shoulderY,
+        elbowX,
+        elbowY,
+        wristX:endX,
+        wristY:handY
+      };
     };
 
     const drawLeg=(hipX, footX)=>{
-      const thickness = 3*scale;
-      const kneeX = (hipX + footX) / 2;
+      const direction=footX>=hipX?1:-1;
+      const thighOuter=3.9*scale;
+      const thighInner=2.6*scale;
+      const kneeOuter=2.8*scale;
+      const kneeInner=1.9*scale;
+      const kneeX=hipX+(footX-hipX)*0.52;
+      const hipCapY=hipSurfaceY;
+      const ankleY=shoeTop;
+      const innerHipX=hipX - direction*thighInner;
+      const outerHipX=hipX + direction*thighOuter;
+      const kneeInnerX=kneeX - direction*kneeInner;
+      const kneeOuterX=kneeX + direction*kneeOuter;
+      const ankleInnerX=footX - direction*1.35*scale;
+      const ankleOuterX=footX + direction*1.9*scale;
+      const grad=ctx.createLinearGradient(hipX, hipCapY-0.4*scale, hipX, ankleY);
+      grad.addColorStop(0, skinHighlight);
+      grad.addColorStop(0.5, appearance.skin);
+      grad.addColorStop(1, skinShadow);
+      ctx.fillStyle=grad;
       ctx.beginPath();
-      ctx.moveTo(hipX - thickness, hipY);
-      ctx.quadraticCurveTo(kneeX - thickness * 0.8, kneeY, footX - thickness * 0.5, shoeTop);
-      ctx.lineTo(footX + thickness * 0.5, shoeTop);
-      ctx.quadraticCurveTo(kneeX + thickness * 0.8, kneeY, hipX + thickness, hipY);
+      ctx.moveTo(innerHipX, hipCapY);
+      ctx.quadraticCurveTo(hipX - direction*thighInner*0.5, hipY + 1.6*scale, kneeInnerX, kneeY);
+      ctx.quadraticCurveTo(ankleInnerX - direction*0.3*scale, ankleY - 1.3*scale, ankleInnerX, ankleY);
+      ctx.lineTo(ankleOuterX, ankleY);
+      ctx.quadraticCurveTo(ankleOuterX - direction*0.35*scale, ankleY - 1.25*scale, kneeOuterX, kneeY - 0.2*scale);
+      ctx.quadraticCurveTo(hipX + direction*thighOuter*0.95, hipY + 1.4*scale, outerHipX, hipCapY);
+      ctx.quadraticCurveTo(hipX + direction*thighInner*0.2, hipCapY - 0.8*scale, innerHipX, hipCapY);
       ctx.closePath();
       ctx.fill();
+      ctx.save();
+      ctx.strokeStyle=skinDeepShadow;
+      ctx.lineWidth=0.9*scale;
+      ctx.beginPath();
+      ctx.moveTo(outerHipX, hipCapY + 0.4*scale);
+      ctx.quadraticCurveTo(kneeOuterX, kneeY + 0.25*scale, ankleOuterX - direction*0.45*scale, ankleY - 0.4*scale);
+      ctx.stroke();
+      ctx.strokeStyle=skinHighlight;
+      ctx.globalAlpha=0.5;
+      ctx.beginPath();
+      ctx.moveTo(innerHipX + direction*0.4*scale, hipCapY + 0.3*scale);
+      ctx.quadraticCurveTo(kneeInnerX, kneeY + 0.6*scale, ankleInnerX + direction*0.25*scale, ankleY - 0.4*scale);
+      ctx.stroke();
+      ctx.restore();
+      return {
+        direction,
+        hipX,
+        hipY,
+        hipCapY,
+        hipInnerX:innerHipX,
+        hipOuterX:outerHipX,
+        kneeX,
+        kneeY,
+        kneeInnerX,
+        kneeOuterX,
+        ankleX:footX,
+        ankleY,
+        ankleInnerX,
+        ankleOuterX
+      };
     };
 
-    drawLeg(torsoX + 6*scale, torsoX + 5*scale);
-    drawLeg(torsoX + torsoWidth - 6*scale, torsoX + torsoWidth - 5*scale);
+    const leftLegProfile=drawLeg(torsoX + 6*scale, torsoX + 5*scale);
+    const rightLegProfile=drawLeg(torsoX + torsoWidth - 6*scale, torsoX + torsoWidth - 5*scale);
 
-    if(genderKey==='female'){
-      ctx.beginPath();
-      ctx.moveTo(torsoX, torsoY+2*scale);
-      ctx.lineTo(torsoX+torsoWidth, torsoY+2*scale);
-      ctx.lineTo(torsoX+torsoWidth-4*scale, torsoY+torsoHeight);
-      ctx.lineTo(torsoX+4*scale, torsoY+torsoHeight);
-      ctx.closePath();
-      ctx.fill();
-    }else{
-      ctx.fillRect(torsoX, torsoY, torsoWidth, torsoHeight);
-    }
+    const shoulderHalf=torsoWidth/2 + (genderKey==='male'?2.6:2.3)*scale;
+    const chestHalf=shoulderHalf - 0.9*scale;
+    const waistHalf=Math.max(4.2*scale, torsoWidth/2 - (genderKey==='female'?4.6:3.4)*scale);
+    const hipHalf=Math.max(waistHalf + (genderKey==='female'?1.7:1.3)*scale, torsoWidth/2 - (genderKey==='female'?0.8:1.4)*scale);
 
-    drawArm(torsoX + 3.5*scale, torsoX - 2*scale);
-    drawArm(torsoX + torsoWidth - 3.5*scale, torsoX + torsoWidth + 2*scale);
+    const torsoContour={
+      neckTopY,
+      neckBaseY,
+      neckHalf,
+      shoulderY,
+      shoulderHalf,
+      chestY,
+      chestHalf,
+      waistY,
+      waistHalf,
+      hipY:hipSurfaceY,
+      hipHalf
+    };
 
-    const defaultPreview = opts.preview || (!withName && scale >= (opts.previewScaleThreshold || 2.7));
-    const headRadiusMultiplier = opts.headRadiusMultiplier != null ? opts.headRadiusMultiplier : (defaultPreview ? 12 : 6);
-    const headRadius = headRadiusMultiplier * scale;
-    const headCx = x;
-    const headCy = baseY + 10*scale;
-    const headTop = headCy - headRadius;
+    const neckGrad=ctx.createLinearGradient(centerX, neckTopY, centerX, neckBaseY + 0.8*scale);
+    neckGrad.addColorStop(0, skinHighlight);
+    neckGrad.addColorStop(0.55, appearance.skin);
+    neckGrad.addColorStop(1, skinShadow);
+    ctx.fillStyle=neckGrad;
+    ctx.beginPath();
+    ctx.moveTo(centerX - neckHalf*0.85, neckTopY);
+    ctx.quadraticCurveTo(centerX - neckHalf, neckBaseY - 0.5*scale, centerX - neckHalf*0.55, neckBaseY);
+    ctx.lineTo(centerX + neckHalf*0.55, neckBaseY);
+    ctx.quadraticCurveTo(centerX + neckHalf, neckTopY + 0.25*scale, centerX + neckHalf*0.85, neckTopY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.save();
+    ctx.strokeStyle=skinShadow;
+    ctx.lineWidth=0.7*scale;
+    ctx.globalAlpha=0.6;
+    ctx.beginPath();
+    ctx.moveTo(centerX - neckHalf*0.38, neckTopY + 0.35*scale);
+    ctx.lineTo(centerX - neckHalf*0.24, neckBaseY - 0.35*scale);
+    ctx.moveTo(centerX + neckHalf*0.38, neckTopY + 0.35*scale);
+    ctx.lineTo(centerX + neckHalf*0.24, neckBaseY - 0.35*scale);
+    ctx.stroke();
+    ctx.restore();
+
+    const torsoGrad=ctx.createLinearGradient(centerX, neckBaseY, centerX, hipSurfaceY + 1.6*scale);
+    torsoGrad.addColorStop(0, skinHighlight);
+    torsoGrad.addColorStop(0.55, appearance.skin);
+    torsoGrad.addColorStop(1, skinShadow);
+    ctx.fillStyle=torsoGrad;
+    ctx.beginPath();
+    ctx.moveTo(centerX - neckHalf, neckBaseY);
+    ctx.quadraticCurveTo(centerX - shoulderHalf, shoulderY - 0.8*scale, centerX - chestHalf, chestY);
+    ctx.quadraticCurveTo(centerX - waistHalf, waistY, centerX - hipHalf, hipSurfaceY);
+    ctx.quadraticCurveTo(centerX - hipHalf + 0.8*scale, hipSurfaceY + 1.6*scale, centerX - hipHalf + 0.4*scale, hipY);
+    ctx.lineTo(centerX + hipHalf - 0.4*scale, hipY);
+    ctx.quadraticCurveTo(centerX + hipHalf - 0.8*scale, hipSurfaceY + 1.6*scale, centerX + hipHalf, hipSurfaceY);
+    ctx.quadraticCurveTo(centerX + waistHalf, waistY, centerX + chestHalf, chestY);
+    ctx.quadraticCurveTo(centerX + shoulderHalf, shoulderY - 0.8*scale, centerX + neckHalf, neckBaseY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.save();
+    ctx.strokeStyle=skinDeepShadow;
+    ctx.lineWidth=0.9*scale;
+    ctx.beginPath();
+    ctx.moveTo(centerX + chestHalf*0.85, chestY + 0.4*scale);
+    ctx.quadraticCurveTo(centerX + waistHalf*0.9, waistY + 0.8*scale, centerX + hipHalf*0.85, hipSurfaceY + 1.3*scale);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(centerX - chestHalf*0.85, chestY + 0.4*scale);
+    ctx.quadraticCurveTo(centerX - waistHalf*0.9, waistY + 0.8*scale, centerX - hipHalf*0.85, hipSurfaceY + 1.3*scale);
+    ctx.stroke();
+    ctx.strokeStyle=skinHighlight;
+    ctx.globalAlpha=0.52;
+    ctx.beginPath();
+    ctx.moveTo(centerX, chestY - 0.4*scale);
+    ctx.quadraticCurveTo(centerX - 0.2*scale, waistY + 0.4*scale, centerX, hipSurfaceY + 0.9*scale);
+    ctx.stroke();
+    ctx.restore();
+
+    const leftArmProfile=drawArm(torsoX + 3.5*scale, torsoX - 2*scale);
+    const rightArmProfile=drawArm(torsoX + torsoWidth - 3.5*scale, torsoX + torsoWidth + 2*scale);
     const metrics={
       torsoX,
       torsoY,
@@ -650,10 +877,14 @@
       shoeTop,
       shoeHeight,
       footBaseline,
-      centerX:x,
+      centerX,
       headCx,
       headCy,
-      headRadius
+      headRadius,
+      torsoContour,
+      legs:{left:leftLegProfile, right:rightLegProfile},
+      neck:{top:neckTopY, base:neckBaseY, width:neckHalf*2},
+      arms:{left:leftArmProfile, right:rightArmProfile}
     };
 
     drawAccessories(ctx, palette, metrics, scale, equip, 'back');
@@ -662,13 +893,13 @@
     drawUpperOutfit(ctx, palette, metrics, scale, {equip, gender:genderKey});
     drawAccessories(ctx, palette, metrics, scale, equip, 'front');
     const faceScale = headRadius / 36;
-    const hairTop = headCy - (headRadius * 0.7);
+    const hairTop = headCy - (headRadius * 0.82);
     drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale);
     drawExpression(ctx, appearance.emotion, headCx, headCy, appearance.eyes, faceScale);
 
     if(equip.head){
       ctx.fillStyle="#e94560";
-      const hatTop = headTop - 4*scale;
+      const hatTop = headTop - 3*scale;
       ctx.fillRect(headCx - headRadius, hatTop, headRadius * 2, 4*scale);
     }
 
