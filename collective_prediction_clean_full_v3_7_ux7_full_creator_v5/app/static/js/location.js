@@ -379,6 +379,7 @@ async function persistAppearance(){
 // Stage rendering
 const stage=document.getElementById("stage"), ctx=stage.getContext("2d");
 const charCanvas=document.getElementById("char-canvas"), cctx=charCanvas.getContext("2d");
+const profileCanvas=document.getElementById("u-face"), pctx=profileCanvas?profileCanvas.getContext("2d"):null;
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
     others={};
 
@@ -430,6 +431,25 @@ function drawCharPreview(){
   }
   const p={name:username,x:charCanvas.width/2,y:charCanvas.height/2+40,equip:mePos.equip,appearance:mePos.appearance,gender:mePos.gender||myGender};
   CharacterRenderer.draw(cctx, p, {scale:SCALE_PREVIEW, withName:false, preview:true});
+  drawProfileBadge();
+}
+function drawProfileBadge(){
+  if(!profileCanvas || !pctx){
+    return;
+  }
+  pctx.clearRect(0,0,profileCanvas.width,profileCanvas.height);
+  if(!characterRendererReady()){
+    return;
+  }
+  const portrait={
+    name:mePos.name,
+    x:profileCanvas.width/2,
+    y:profileCanvas.height*1.35,
+    equip:mePos.equip,
+    appearance:mePos.appearance,
+    gender:mePos.gender||myGender
+  };
+  CharacterRenderer.draw(pctx, portrait, {scale:2.45, withName:false, preview:true, shadow:false});
 }
 document.getElementById("go-left").addEventListener("click", ()=>{ mePos.x=Math.max(40, mePos.x-30); sendMove(); drawStage(); });
 document.getElementById("go-right").addEventListener("click", ()=>{ mePos.x=Math.min(stage.width-40, mePos.x+30); sendMove(); drawStage(); });
@@ -447,6 +467,7 @@ async function refreshAvatar(){
     localStorage.setItem('cp_gender', myGender);
     updateGenderBadge(myGender);
   }
+  drawProfileBadge();
   renderEmotionPanel();
   drawStage(); drawCharPreview(); sendState(); sendAppearance();
 }

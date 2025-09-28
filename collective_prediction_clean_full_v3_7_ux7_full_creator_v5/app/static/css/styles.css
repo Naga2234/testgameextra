@@ -3,9 +3,15 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0f172a;color:#fff;position:sticky;top:0;z-index:10}
 .brand{font-weight:800;letter-spacing:.2px}
-.me{display:flex;align-items:center;gap:10px;font-weight:700}
+.me{display:flex;align-items:center;gap:12px;font-weight:700}
 .ghost{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:10px;padding:6px 10px;cursor:pointer}
-.gender-ico{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#ffd66b;border:1px solid #e8be4a;font-size:12px;color:#1f2937}
+.me .profile-btn{display:flex;align-items:center;gap:10px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.45);backdrop-filter:blur(6px);transition:background .12s ease,border-color .12s ease}
+.me .profile-btn:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.6)}
+#u-face{display:block;width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 0 0 2px rgba(15,23,42,.16);flex-shrink:0}
+#btn-character #u-name{font-weight:700;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+#btn-character .gender-ico{margin-left:8px}
+.gender-ico{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#ffd66b;border:1px solid #e8be4a;font-size:12px;color:#1f2937;flex-shrink:0}
+.me #btn-shop{padding:8px 14px;border-radius:12px}
 
 .mur-layout.vertical{display:flex;flex-direction:column;gap:16px;padding:16px;max-width:1100px;margin:0 auto}
 .stage-wrap{position:relative}
