@@ -195,6 +195,18 @@
       ctx.restore();
     }
 
+    function renderShavedBand(heightMul, widthMul, alpha, tint){
+      if(shouldRender('front')){
+        drawShavedBand(heightMul, widthMul, alpha, tint);
+        return true;
+      }
+      if(shouldRender('back')){
+        drawShavedBand(heightMul, widthMul, alpha, tint);
+        return true;
+      }
+      return false;
+    }
+
     function drawCurlRow(count, radiusMul, offsetMul, options={}){
       const radius = headRadius * radiusMul;
       const startX = cx - headRadius * 1.1;
@@ -275,33 +287,33 @@
         break;
       case 'fade':
         if(shouldRender('back')){
-          drawShavedBand(0.48, 2.1, 0.75, -60);
           drawCap(1.7, 0.5, 0.58, 0.34);
         }
+        renderShavedBand(0.48, 2.1, 0.75, -60);
         if(shouldRender('front')){
           drawFringeSegments(2, 0.27, 0.22, {highlightAlpha:0.16});
         }
         break;
       case 'buzz':
         if(shouldRender('back')){
-          drawShavedBand(0.32, 1.9, 0.7, -54);
           drawCap(1.55, 0.38, 0.48, 0.28);
         }
+        renderShavedBand(0.32, 1.9, 0.7, -54);
         break;
       case 'undercut':
         if(shouldRender('back')){
-          drawShavedBand(0.6, 2.2, 0.82, -68);
           drawCap(1.82, 0.66, 0.6, 0.4);
         }
+        renderShavedBand(0.6, 2.2, 0.82, -68);
         if(shouldRender('front')){
           drawFringeSegments(2, 0.3, 0.3, {highlightAlpha:0.2});
         }
         break;
       case 'mohawk':
         if(shouldRender('back')){
-          drawShavedBand(0.62, 2.4, 0.65, -70);
           drawMohawk(0.9, 1.15);
         }
+        renderShavedBand(0.62, 2.4, 0.65, -70);
         break;
       case 'curly':
         if(shouldRender('back')){

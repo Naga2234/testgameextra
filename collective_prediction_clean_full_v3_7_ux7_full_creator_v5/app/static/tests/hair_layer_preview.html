@@ -32,8 +32,9 @@
 <body>
   <h1>Hair Layering Preview</h1>
   <p>
-    Each avatar is rendered with the new layered hair routine. The bulk of the hairstyle is painted
-    behind the head, while the fringe accents sit above the skin yet below facial features.
+    Each avatar is rendered with the layered hair routine. The bulk of the hairstyle is painted
+    behind the head, while the fringe accents sit above the skin yet below facial features. The fade,
+    buzz, and undercut examples confirm the shaved gradient is rendered over the scalp again.
   </p>
   <canvas id="hair-layer-preview" width="720" height="320"></canvas>
   <script src="../js/avatar_drawing.js"></script>
@@ -50,13 +51,17 @@
       const skin = '#f5d0a9';
       const eyes = '#1f2a48';
       const styles = [
-        {style: 'short', hair: '#2f2b2b', label: 'Short'},
+        {style: 'fade', hair: '#2f2b2b', label: 'Fade'},
+        {style: 'buzz', hair: '#5c4638', label: 'Buzz'},
+        {style: 'undercut', hair: '#27354f', label: 'Undercut'},
+        {style: 'short', hair: '#383030', label: 'Short'},
         {style: 'ponytail', hair: '#6b3f1f', label: 'Ponytail'},
-        {style: 'curly', hair: '#3a2f4f', label: 'Curly'},
-        {style: 'long', hair: '#1f4058', label: 'Long'}
+        {style: 'curly', hair: '#3a2f4f', label: 'Curly'}
       ];
+      const spacing = 120;
+      const startX = 80;
       styles.forEach((entry, index) => {
-        const cx = 90 + index * 160;
+        const cx = startX + index * spacing;
         AvatarDrawing.drawHair(ctx, entry.style, entry.hair, cx, hairlineY, 1, 'back');
         AvatarDrawing.drawHead(ctx, cx, centerY, headRadius, skin);
         AvatarDrawing.drawHair(ctx, entry.style, entry.hair, cx, hairlineY, 1, 'front');
