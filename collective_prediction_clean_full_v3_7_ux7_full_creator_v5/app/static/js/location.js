@@ -20,8 +20,8 @@ updateGenderBadge(myGender);
 const SCALE_SCENE = 2.4;
 const SCALE_PREVIEW = 3.0;
 const NAME_BASE_PX = 12;
-const NAME_SCENE_PX = Math.round(NAME_BASE_PX * SCALE_SCENE) + 10;
-const NAME_PREVIEW_PX = Math.round(NAME_BASE_PX * SCALE_PREVIEW) + 10;
+const NAME_SCENE_PX = Math.round(NAME_BASE_PX * SCALE_SCENE);
+const NAME_PREVIEW_PX = Math.round(NAME_BASE_PX * SCALE_PREVIEW) + 4;
 
 const EMOTIONS = [
   {value:'smile',label:'Улыбка',icon:'🙂'},
@@ -485,7 +485,7 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
 
   if(withName){
     const fontPx = (scale===SCALE_PREVIEW ? NAME_PREVIEW_PX : NAME_SCENE_PX);
-    ctx2.fillStyle="#111827"; ctx2.textAlign="center"; ctx2.font = `bold ${fontPx}px Inter,system-ui`; ctx2.fillText(p.name, p.x, by-18);
+    ctx2.fillStyle="#111827"; ctx2.textAlign="center"; ctx2.font = `500 ${fontPx}px Inter,system-ui`; ctx2.fillText(p.name, p.x, by-18);
   }
 }
 
