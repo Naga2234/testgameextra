@@ -26,6 +26,11 @@
         <button id="go-left" class="arrow">◀</button>
         <button id="go-right" class="arrow">▶</button>
       </div>
+      <div class="render-toggle" id="render-toggle" role="group" aria-label="Режим рендера">
+        <span class="render-toggle-label">Рендер:</span>
+        <button type="button" class="render-toggle-btn" data-mode="canvas" aria-pressed="false">Canvas</button>
+        <button type="button" class="render-toggle-btn" data-mode="svg" aria-pressed="false">SVG</button>
+      </div>
     </div>
   </section>
 
@@ -106,6 +111,7 @@
 <script src="/static/js/avatar_drawing.js"></script>
 <script src="/static/js/outfitLayers.js"></script>
 <script src="/static/js/characterRenderer.js"></script>
+<script src="/static/js/svgCharacterRenderer.js"></script>
 <script src="/static/js/location.js"></script>
 </body>
 </html>

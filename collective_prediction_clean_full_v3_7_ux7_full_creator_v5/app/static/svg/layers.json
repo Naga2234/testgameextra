@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "viewBox": "0 0 120 140",
+  "layers": [
+    {"id": "shadow", "file": "base/shadow.svg", "slot": "shadow", "z": 0},
+    {"id": "cloak", "file": "cloak/base.svg", "slot": "cloak", "z": 8, "conditions": {"equip": "cloak"}},
+    {"id": "body", "file": "base/body.svg", "slot": "body", "z": 10},
+    {"id": "eyes", "file": "base/eyes.svg", "slot": "face", "z": 18},
+    {"id": "brows", "file": "base/brows.svg", "slot": "face", "z": 19},
+    {"id": "upper", "file": "upper/base.svg", "slot": "upper", "z": 30},
+    {"id": "lower", "file": "lower/base.svg", "slot": "lower", "z": 40},
+    {"id": "shoes", "file": "shoes/base.svg", "slot": "shoes", "z": 50},
+    {"id": "accessory", "file": "accessory/base.svg", "slot": "accessory", "z": 45, "conditions": {"equip": "accessory"}},
+    {"id": "expression-smile", "file": "expression/smile.svg", "slot": "expression", "z": 52, "emotions": ["smile"]},
+    {"id": "expression-neutral", "file": "expression/neutral.svg", "slot": "expression", "z": 52, "emotions": ["neutral"], "fallback": true},
+    {"id": "expression-frown", "file": "expression/frown.svg", "slot": "expression", "z": 52, "emotions": ["frown"]},
+    {"id": "expression-surprised", "file": "expression/surprised.svg", "slot": "expression", "z": 52, "emotions": ["surprised"]},
+    {"id": "expression-sleepy", "file": "expression/sleepy.svg", "slot": "expression", "z": 52, "emotions": ["sleepy"]},
+    {"id": "hair-short", "file": "hair/short.svg", "slot": "hair", "z": 60, "styles": ["short", "pixie", "bob", "buzz", "fade", "undercut"], "fallback": true},
+    {"id": "hair-long", "file": "hair/long.svg", "slot": "hair", "z": 61, "styles": ["long", "braids", "ponytail", "afro", "curly"]},
+    {"id": "hair-bun", "file": "hair/bun.svg", "slot": "hair", "z": 62, "styles": ["bun"]},
+    {"id": "hat", "file": "head/hat.svg", "slot": "head", "z": 70, "conditions": {"equip": "head"}}
+  ],
+  "defaults": {
+    "hair": "hair-short",
+    "expression": "expression-neutral"
+  }
+}

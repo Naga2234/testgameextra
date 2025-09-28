@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M36 58c-8 12-12 28-12 46v16c0 10 8 18 18 18h36c10 0 18-8 18-18V104c0-18-4-34-12-46l-14 6-10-4-10 4z" fill="var(--cloak-base,#123863)" stroke="var(--cloak-stroke,#061021)" stroke-width="2" stroke-linejoin="round" />
+  <path d="M42 68l18 10 18-10" fill="none" stroke="var(--cloak-highlight,#1f4e86)" stroke-width="3" stroke-linecap="round" />
+  <path d="M44 116h32" fill="none" stroke="var(--cloak-edge,#07192f)" stroke-width="3" stroke-linecap="round" />
+</svg>

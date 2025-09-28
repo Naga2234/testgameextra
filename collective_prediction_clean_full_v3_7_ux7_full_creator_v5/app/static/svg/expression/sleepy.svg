@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M52 45c4 2 12 2 16 0" fill="none" stroke="var(--mouth-base,#8c3f3f)" stroke-width="2" stroke-linecap="round" />
+  <path d="M48 38l4 2-4 2" fill="none" stroke="var(--hair-shadow,#1f2f3a)" stroke-width="1.4" stroke-linecap="round" />
+</svg>

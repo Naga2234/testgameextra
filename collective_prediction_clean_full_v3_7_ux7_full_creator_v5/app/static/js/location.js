@@ -376,8 +376,61 @@ const AVATAR_CANVAS_STAGE={width:220,height:260};
 const AVATAR_CANVAS_PREVIEW={width:220,height:260};
 const AVATAR_BASELINE_MARGIN=12;
 const AVATAR_FONT_FAMILY='Inter,system-ui';
+const RENDER_MODE_KEY='cp_render_mode';
+const AVAILABLE_RENDER_MODES=['canvas','svg'];
 const stagePlayers=new Map();
+const SVG_NS='http://www.w3.org/2000/svg';
 let previewCharacter=null;
+let svgReadyPromise=null;
+
+function ensureSvgReady(){
+  const renderer=window.SVGCharacterRenderer;
+  if(!renderer || typeof renderer.preload!=="function"){ return Promise.resolve(); }
+  if(typeof renderer.isReady==='function' && renderer.isReady()){ return Promise.resolve(); }
+  if(!svgReadyPromise){
+    svgReadyPromise=renderer.preload().catch(()=>{}).finally(()=>{ svgReadyPromise=null; });
+  }
+  return svgReadyPromise || Promise.resolve();
+}
+
+function getStoredRenderMode(){
+  const stored=(localStorage.getItem(RENDER_MODE_KEY)||'').toLowerCase();
+  if(AVAILABLE_RENDER_MODES.includes(stored)){ return stored; }
+  return 'canvas';
+}
+
+let currentRenderMode=getStoredRenderMode();
+
+function setRenderMode(mode){
+  if(!AVAILABLE_RENDER_MODES.includes(mode)){ return; }
+  currentRenderMode=mode;
+  try{ localStorage.setItem(RENDER_MODE_KEY, mode); }catch{}
+  updateRenderToggle();
+  drawStage();
+  drawCharPreview();
+}
+
+function updateRenderToggle(){
+  const toggle=document.getElementById('render-toggle');
+  if(!toggle) return;
+  toggle.querySelectorAll('[data-mode]').forEach(btn=>{
+    const mode=(btn.dataset.mode||'').toLowerCase();
+    const isActive=mode===currentRenderMode;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive?'true':'false');
+  });
+}
+
+const renderToggle=document.getElementById('render-toggle');
+if(renderToggle){
+  renderToggle.addEventListener('click',(ev)=>{
+    const btn=ev.target.closest('[data-mode]');
+    if(!btn) return;
+    const mode=(btn.dataset.mode||'').toLowerCase();
+    setRenderMode(mode);
+  });
+  updateRenderToggle();
+}
 
 function createAvatarCanvas(width,height){
   const canvas=document.createElement('canvas');
@@ -391,6 +444,30 @@ function createAvatarCanvas(width,height){
   return canvas;
 }
 
+function createAvatarSVGWrapper(width,height){
+  const wrapper=document.createElement('div');
+  wrapper.className='avatar-svg-wrapper';
+  wrapper.hidden=true;
+  wrapper.style.width=`${width}px`;
+  wrapper.style.height=`${height}px`;
+  wrapper.setAttribute('aria-hidden','true');
+  const svg=document.createElementNS(SVG_NS,'svg');
+  svg.setAttribute('data-avatar-svg','1');
+  svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  svg.setAttribute('role','presentation');
+  svg.setAttribute('tabindex','-1');
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', height);
+  wrapper.appendChild(svg);
+  const chat=document.createElement('div');
+  chat.className='avatar-chat-bubble';
+  wrapper.appendChild(chat);
+  const name=document.createElement('div');
+  name.className='avatar-name-label';
+  wrapper.appendChild(name);
+  return {wrapper, svg};
+}
+
 function createStagePlayerElement(name,{withName=true,showChat=true,preview=false,scale=AVATAR_STAGE_SCALE,canvasSize=AVATAR_CANVAS_STAGE}={}){
   const container=document.createElement('div');
   container.className='stage-player';
@@ -398,17 +475,22 @@ function createStagePlayerElement(name,{withName=true,showChat=true,preview=fals
   container.setAttribute('aria-label', name);
   const canvas=createAvatarCanvas(canvasSize.width, canvasSize.height);
   container.appendChild(canvas);
+  const svgElements=createAvatarSVGWrapper(canvasSize.width, canvasSize.height);
+  container.appendChild(svgElements.wrapper);
   return {
     container,
     canvas,
     ctx: canvas.getContext('2d'),
+    svgWrapper: svgElements.wrapper,
+    svgElement: svgElements.svg,
     scale,
     preview,
     withName,
     showChat,
     canvasWidth:canvasSize.width,
     canvasHeight:canvasSize.height,
-    pixelRatio:null
+    pixelRatio:null,
+    renderMode:'canvas'
   };
 }
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
@@ -460,6 +542,7 @@ function getStageBounds(){
 function applyCharacterToElement(entry, info, options={}){
   if(!entry || !entry.ctx) return;
   const renderer=window.CharacterRenderer;
+  const svgRenderer=window.SVGCharacterRenderer;
   if(!renderer || typeof renderer.draw!=='function') return;
   if(typeof renderer.isReady==='function' && !renderer.isReady()){
     if(typeof window.requestAnimationFrame==='function'){
@@ -471,23 +554,24 @@ function applyCharacterToElement(entry, info, options={}){
   const ctx=entry.ctx;
   const baseWidth=entry.canvasWidth || canvas.width;
   const baseHeight=entry.canvasHeight || canvas.height;
+  const desiredMode=(options.renderMode && AVAILABLE_RENDER_MODES.includes(options.renderMode)) ? options.renderMode : currentRenderMode;
   const ratio=Math.max(1, window.devicePixelRatio || 1);
-  if(entry.pixelRatio!==ratio){
-    canvas.width=Math.round(baseWidth*ratio);
-    canvas.height=Math.round(baseHeight*ratio);
-    canvas.style.width=`${baseWidth}px`;
-    canvas.style.height=`${baseHeight}px`;
-    entry.pixelRatio=ratio;
-  }
-  if(typeof ctx.resetTransform==='function'){
-    ctx.resetTransform();
-  }else if(typeof ctx.setTransform==='function'){
-    ctx.setTransform(1,0,0,1,0,0);
-  }
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(ratio!==1){
-    ctx.scale(ratio, ratio);
-  }
+  const ensureCanvasDimensions=()=>{
+    if(entry.pixelRatio!==ratio){
+      canvas.width=Math.round(baseWidth*ratio);
+      canvas.height=Math.round(baseHeight*ratio);
+      canvas.style.width=`${baseWidth}px`;
+      canvas.style.height=`${baseHeight}px`;
+      entry.pixelRatio=ratio;
+    }
+    if(typeof ctx.resetTransform==='function'){
+      ctx.resetTransform();
+    }else if(typeof ctx.setTransform==='function'){
+      ctx.setTransform(1,0,0,1,0,0);
+    }
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    if(ratio!==1){ ctx.scale(ratio, ratio); }
+  };
   const drawScale = options.scale!=null?options.scale:(entry.scale!=null?entry.scale:AVATAR_STAGE_SCALE);
   const showChat = options.showChat!=null?options.showChat:(entry.showChat!==undefined?entry.showChat:true);
   const withName = options.withName!=null?options.withName:(entry.withName!==undefined?entry.withName:true);
@@ -525,7 +609,40 @@ function applyCharacterToElement(entry, info, options={}){
     chatScale:options.chatScale,
     nameFontWeight:options.nameFontWeight
   };
-  renderer.draw(ctx, drawState, rendererOptions);
+  let renderedWithSvg=false;
+  if(desiredMode==='svg' && svgRenderer && typeof svgRenderer.draw==='function'){
+    if(entry.svgWrapper){
+      entry.svgWrapper.hidden=false;
+      const svgResult=svgRenderer.draw(entry.svgWrapper, drawState, Object.assign({}, rendererOptions, {width:baseWidth,height:baseHeight}));
+      if(svgResult && svgResult.mode==='svg'){
+        renderedWithSvg=true;
+        entry.canvas.hidden=true;
+        entry.svgWrapper.removeAttribute('aria-hidden');
+        entry.renderMode='svg';
+      }else{
+        entry.svgWrapper.hidden=true;
+        entry.svgWrapper.setAttribute('aria-hidden','true');
+        if(svgRenderer && typeof svgRenderer.preload==='function' && typeof svgRenderer.isReady==='function' && !svgRenderer.isReady() && !options.__svgRetry){
+          ensureSvgReady().then(()=>{
+            if(currentRenderMode==='svg'){
+              const retryOptions=Object.assign({}, rendererOptions, {renderMode:'svg', __svgRetry:true});
+              applyCharacterToElement(entry, info, retryOptions);
+            }
+          }).catch(()=>{});
+        }
+      }
+    }
+  }
+  if(!renderedWithSvg){
+    if(entry.svgWrapper){
+      entry.svgWrapper.hidden=true;
+      entry.svgWrapper.setAttribute('aria-hidden','true');
+    }
+    entry.canvas.hidden=false;
+    ensureCanvasDimensions();
+    renderer.draw(ctx, drawState, rendererOptions);
+    entry.renderMode='canvas';
+  }
 }
 function updateStagePlayer(player, isMe){
   if(!stage || !player || !player.name) return;

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="60" cy="34" r="16" fill="var(--skin-base,#f1d3b3)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="2" />
+    <path d="M48 48h24" stroke="var(--skin-highlight,#ffd7ba)" stroke-width="3" />
+    <rect x="52" y="47" width="16" height="12" rx="6" fill="var(--skin-base,#f1d3b3)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.6" />
+    <rect x="36" y="58" width="10" height="30" rx="5" fill="var(--skin-base,#f1d3b3)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.6" />
+    <rect x="74" y="58" width="10" height="30" rx="5" fill="var(--skin-base,#f1d3b3)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.6" />
+    <path d="M48 54c-9 6-14 16-14 28v12c0 10 8 18 18 18h16c10 0 18-8 18-18V82c0-12-5-22-14-28" fill="var(--skin-base,#f1d3b3)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.6" />
+    <path d="M49 62c-6 8-6 26-6 34" stroke="var(--skin-highlight,#ffd7ba)" stroke-width="1.4" />
+    <path d="M71 62c6 8 6 26 6 34" stroke="var(--skin-highlight,#ffd7ba)" stroke-width="1.4" />
+  </g>
+</svg>
