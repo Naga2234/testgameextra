@@ -74,7 +74,8 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .auth-card .row{margin:10px 0}
 .auth-card input, .auth-card select{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff}
 .gender-select-row .select-wrap{position:relative}
-.pill-select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:38px;background:rgba(255,255,255,.12) url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='white' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;background-size:12px auto}
+.pill-select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:44px;border-radius:999px;background-color:rgba(255,255,255,.12);background-image:url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='white' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"),linear-gradient(135deg,rgba(106,162,255,.32),rgba(91,140,255,.14));background-repeat:no-repeat,no-repeat;background-position:right 14px center,center;background-size:12px auto,100% 100%;box-shadow:0 0 0 1px rgba(106,162,255,.18) inset}
+.pill-select option{color:#0f172a;background:#fff}
 .pill-select:focus{outline:2px solid rgba(106,162,255,.6);outline-offset:2px}
 .gender-select-row .small-muted{margin-left:auto}
 .auth-card .actions{display:flex;gap:10px;margin-top:8px}
