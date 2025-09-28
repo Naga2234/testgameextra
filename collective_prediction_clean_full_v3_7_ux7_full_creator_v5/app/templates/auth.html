@@ -80,8 +80,13 @@
           </div>
 
           <div class="row">
-            <label class="lbl">Причёска</label>
-            <div id="styles-wrap" class="select-inline"></div>
+            <div class="hint-row">
+              <label class="lbl" for="style-select">Причёска</label>
+              <span class="small-muted">подбираем под выбранный пол</span>
+            </div>
+            <div class="select-wrap">
+              <select id="style-select" class="pill-select"></select>
+            </div>
           </div>
 
           <div class="row">
@@ -189,6 +194,18 @@ try{
   if(stored.emotion && EMOTIONS.some(e=>e.value===stored.emotion)){ state.emotion=stored.emotion; appearanceLoaded=true; }
 }catch(e){}
 
+function persistAppearanceState(){
+  try{
+    localStorage.setItem('cp_appearance', JSON.stringify({
+      skin: state.skin,
+      hair: state.hair,
+      eyes: state.eyes,
+      style: state.style,
+      emotion: state.emotion
+    }));
+  }catch(e){}
+}
+
 function randomizeAppearanceFor(g){
   const genderKey = g||'other';
   state.skin = SKINS[Math.floor(Math.random()*SKINS.length)];
@@ -233,21 +250,26 @@ function makeSwatches(id, arr, cls){
   }
 }
 function makeStyles(){
+  const select=document.getElementById('style-select');
+  if(!select) return;
   const g=genderValue();
   const list=STYLES[g]||STYLES.other;
-  const box=document.getElementById('styles-wrap'); box.innerHTML="";
   const preferred = list.includes(state.style)?state.style:list[0];
   state.style = preferred;
+  select.innerHTML="";
   list.forEach((name)=>{
-    const b=document.createElement('button'); b.type='button'; b.className='badge'; b.textContent=hairLabel(name);
-    b.dataset.val=name;
-    b.addEventListener('click',()=>{
-      box.querySelectorAll('.badge').forEach(x=>x.dataset.selected=0);
-      b.dataset.selected=1; state.style=name; redrawPreview();
-    });
-    if(name===preferred) b.dataset.selected=1;
-    box.appendChild(b);
+    const opt=document.createElement('option');
+    opt.value=name;
+    opt.textContent=hairLabel(name);
+    select.appendChild(opt);
   });
+  select.value=preferred;
+  select.onchange=()=>{
+    state.style=select.value;
+    persistAppearanceState();
+    redrawPreview();
+  };
+  persistAppearanceState();
 }
 function updateEmotionScrollMask(box){
   if(!box) return;
