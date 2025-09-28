@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M48 58c4 6 12 10 12 10s8-4 12-10" fill="none" stroke="var(--accessory-chain,#f5ce6a)" stroke-width="3" stroke-linecap="round" />
+  <circle cx="60" cy="72" r="6" fill="var(--accessory-base,#f3b234)" stroke="var(--accessory-stroke,#8a5a08)" stroke-width="2" />
+  <circle cx="60" cy="70" r="2.4" fill="var(--accessory-highlight,#ffe38a)" stroke="none" />
+</svg>

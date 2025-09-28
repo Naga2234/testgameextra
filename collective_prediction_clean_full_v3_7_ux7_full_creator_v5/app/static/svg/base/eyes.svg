@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <g fill="var(--eye-base,#2b4c7e)" stroke="var(--hair-shadow,#1f2f3a)" stroke-width="1.2" stroke-linecap="round">
+    <ellipse cx="52" cy="34" rx="4.4" ry="3.4" fill="var(--eye-white,#ffffff)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1" />
+    <ellipse cx="68" cy="34" rx="4.4" ry="3.4" fill="var(--eye-white,#ffffff)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1" />
+    <circle cx="52" cy="34" r="2" />
+    <circle cx="68" cy="34" r="2" />
+    <circle cx="51" cy="33" r="0.9" fill="var(--eye-highlight,#d8f0ff)" stroke="none" />
+    <circle cx="67" cy="33" r="0.9" fill="var(--eye-highlight,#d8f0ff)" stroke="none" />
+  </g>
+</svg>
