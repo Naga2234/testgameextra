@@ -122,7 +122,37 @@
           <div class="preview-header">
             <div id="preview-emotion" class="preview-emotion"></div>
           </div>
-          <canvas id="preview" width="260" height="260"></canvas>
+          <div class="character-stage">
+            <div id="preview" class="character male" data-style="short" data-emotion="smile">
+              <div class="character-shadow"></div>
+              <div class="character-inner">
+                <div class="character-head">
+                  <div class="character-hair-back"></div>
+                  <div class="character-face">
+                    <div class="character-eyebrows">
+                      <span class="character-eyebrow left"></span>
+                      <span class="character-eyebrow right"></span>
+                    </div>
+                    <div class="character-eyes">
+                      <span class="character-eye left"></span>
+                      <span class="character-eye right"></span>
+                    </div>
+                    <div class="character-mouth"></div>
+                  </div>
+                  <div class="character-hair"></div>
+                </div>
+                <div class="character-body">
+                  <div class="character-arm left"></div>
+                  <div class="character-arm right"></div>
+                  <div class="character-torso">
+                    <div class="character-underwear"></div>
+                  </div>
+                  <div class="character-leg left"></div>
+                  <div class="character-leg right"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -130,8 +160,6 @@
     <p id="err" class="error"></p>
   </div>
 
-<script src="/static/js/avatar_drawing.js"></script>
-<script src="/static/js/characterRenderer.js"></script>
 <script>
 // Helpers
 async function api(url, method="GET", body=null){
@@ -350,7 +378,7 @@ if(genderSelect){
 }
 
 // Preview drawing
-const pv=document.getElementById('preview'), pctx=pv.getContext('2d');
+const previewCharacterEl=document.getElementById('preview');
 function hairLabel(style){
   const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",mohawk:"Ирокез",
              curly:"Кудри",afro:"Афро",ponytail:"Хвост",pixie:"Пикси",bob:"Каре",long:"Длинные",
@@ -358,23 +386,24 @@ function hairLabel(style){
   return map[style]||style;
 }
 function redrawPreview(){
-  const renderer = window.CharacterRenderer;
-  if(!renderer || typeof renderer.draw !== 'function'){
+  if(!previewCharacterEl){
     return;
   }
   const gender=genderValue();
-  const normalized = renderer.normalizeAppearance ? renderer.normalizeAppearance(state) : Object.assign({}, state);
-  const appearance = Object.assign({}, normalized);
-  pctx.clearRect(0,0,pv.width,pv.height);
-  const character={
-    name:'',
-    x:pv.width/2,
-    y:pv.height/2+40,
-    appearance,
-    equip:{},
-    gender
-  };
-  renderer.draw(pctx, character, {scale:3, withName:false, preview:true});
+  previewCharacterEl.dataset.gender=gender;
+  previewCharacterEl.dataset.style=state.style;
+  previewCharacterEl.dataset.emotion=state.emotion;
+  previewCharacterEl.classList.toggle('male', gender==='male');
+  previewCharacterEl.classList.toggle('female', gender==='female');
+  previewCharacterEl.classList.toggle('other', gender==='other');
+  previewCharacterEl.style.setProperty('--skin', state.skin);
+  previewCharacterEl.style.setProperty('--hair', state.hair);
+  previewCharacterEl.style.setProperty('--eyes', state.eyes);
+  const underwearColor = gender==='female' ? '#f472b6' : gender==='other' ? '#7c3aed' : '#6aa2ff';
+  const mouthColor = gender==='female' ? '#e76d7c' : gender==='other' ? '#f59e0b' : '#d45a60';
+  previewCharacterEl.style.setProperty('--underwear', underwearColor);
+  previewCharacterEl.style.setProperty('--mouth-color', mouthColor);
+  syncAppearanceStorage();
 }
 
 makeSwatches('skin-sw', SKINS, 'skin');
