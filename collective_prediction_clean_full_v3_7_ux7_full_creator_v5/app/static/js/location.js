@@ -357,9 +357,41 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const hasLower = !!(p.equip && p.equip.lower);
 
   drawShadowMini(ctx2, p.x, footBaseline, scale*0.9);
-  if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
+
+  const shoulderY = torsoY + 4*scale;
+  const handY = shoeTop - 1*scale;
+  const hipY = torsoY + torsoHeight;
+  const kneeY = hipY + (shoeTop - hipY) * 0.55;
+
+  function drawArm(startX, endX){
+    const thickness = 2.4*scale;
+    const elbowX = (startX + endX) / 2;
+    const elbowY = shoulderY + (handY - shoulderY) * 0.45;
+    ctx2.beginPath();
+    ctx2.moveTo(startX - thickness, shoulderY);
+    ctx2.bezierCurveTo(elbowX - thickness * 0.8, elbowY, endX - thickness * 0.6, handY - thickness * 0.1, endX - thickness * 0.3, handY);
+    ctx2.lineTo(endX + thickness * 0.3, handY);
+    ctx2.bezierCurveTo(endX + thickness * 0.6, handY - thickness * 0.1, elbowX + thickness * 0.8, elbowY, startX + thickness, shoulderY);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+
+  function drawLeg(hipX, footX){
+    const thickness = 3*scale;
+    const kneeX = (hipX + footX) / 2;
+    ctx2.beginPath();
+    ctx2.moveTo(hipX - thickness, hipY);
+    ctx2.quadraticCurveTo(kneeX - thickness * 0.8, kneeY, footX - thickness * 0.5, shoeTop);
+    ctx2.lineTo(footX + thickness * 0.5, shoeTop);
+    ctx2.quadraticCurveTo(kneeX + thickness * 0.8, kneeY, hipX + thickness, hipY);
+    ctx2.closePath();
+    ctx2.fill();
+  }
 
   ctx2.fillStyle=skin;
+  drawLeg(torsoX + 6*scale, torsoX + 5*scale);
+  drawLeg(torsoX + torsoWidth - 6*scale, torsoX + torsoWidth - 5*scale);
+
   if(genderKey==='female'){
     ctx2.beginPath();
     ctx2.moveTo(torsoX, torsoY+2*scale);
@@ -371,6 +403,18 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   }else{
     ctx2.fillRect(torsoX, torsoY, torsoWidth, torsoHeight);
   }
+
+  drawArm(torsoX + 3.5*scale, torsoX - 2*scale);
+  drawArm(torsoX + torsoWidth - 3.5*scale, torsoX + torsoWidth + 2*scale);
+
+  const isLargePreview = !withName && scale >= SCALE_PREVIEW;
+  const headRadius = (isLargePreview ? 12 : 6) * scale;
+  const headCx = p.x;
+  const headCy = by + 10*scale;
+  const headTop = headCy - headRadius;
+  drawHead(ctx2, headCx, headCy, headRadius, skin);
+
+  if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
 
   if(!hasUpper){
     if(genderKey==='female'){
@@ -420,13 +464,6 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
     ctx2.fillStyle=shoeColor;
     ctx2.fillRect(bx+6*scale,shoeTop,24*scale,shoeHeight);
   }
-
-  const isLargePreview = !withName && scale >= SCALE_PREVIEW;
-  const headRadius = (isLargePreview ? 12 : 6) * scale;
-  const headCx = p.x;
-  const headCy = by + 10*scale;
-  const headTop = headCy - headRadius;
-  drawHead(ctx2, headCx, headCy, headRadius, skin);
   const faceScale = headRadius / 36;
   const hairTop = headCy - (headRadius * 0.7);
   drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
