@@ -378,11 +378,12 @@ function hydrateAppearance(app){
 let myAppearance = hydrateAppearance(storedAppearance);
 function applyAppearanceTo(p){ p.appearance = hydrateAppearance(p.appearance); }
 
-function drawShadowMini(ctx2, x, y, scale){
+function drawShadowMini(ctx2, x, baselineY, scale){
   ctx2.save();
   ctx2.fillStyle='rgba(0,0,0,0.2)';
   ctx2.beginPath();
-  ctx2.ellipse(x, y, 10*scale, 4*scale, 0, 0, Math.PI*2);
+  const offset = 4*scale;
+  ctx2.ellipse(x, baselineY + offset, 10*scale, 4*scale, 0, 0, Math.PI*2);
   ctx2.fill();
   ctx2.restore();
 }
@@ -399,6 +400,9 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const emotion = app.emotion;
 
   const bx=p.x-18*scale, by=p.y-24*scale;
+  const shoeTop = by + 40*scale;
+  const shoeHeight = (p.equip && p.equip.shoes) ? 6*scale : 5*scale;
+  const footBaseline = shoeTop + shoeHeight;
   const torsoX = bx+8*scale;
   const torsoY = by+20*scale;
   const torsoWidth = 20*scale;
@@ -406,7 +410,7 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const hasUpper = !!(p.equip && p.equip.upper);
   const hasLower = !!(p.equip && p.equip.lower);
 
-  drawShadowMini(ctx2, p.x, p.y+18*scale, scale*0.9);
+  drawShadowMini(ctx2, p.x, footBaseline, scale*0.9);
   if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
 
   ctx2.fillStyle=skin;
@@ -464,11 +468,11 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
 
   if(p.equip && p.equip.shoes){
     ctx2.fillStyle="#263b57";
-    ctx2.fillRect(bx+4*scale,by+40*scale,28*scale,6*scale);
+    ctx2.fillRect(bx+4*scale,shoeTop,28*scale,shoeHeight);
   }else{
     const shoeColor = genderKey==='female' ? '#b373d6' : (genderKey==='other' ? '#326b86' : '#263b57');
     ctx2.fillStyle=shoeColor;
-    ctx2.fillRect(bx+6*scale,by+40*scale,24*scale,5*scale);
+    ctx2.fillRect(bx+6*scale,shoeTop,24*scale,shoeHeight);
   }
 
   const isLargePreview = !withName && scale >= SCALE_PREVIEW;
