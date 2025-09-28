@@ -53,6 +53,15 @@ function getItemVisual(type){
   return ITEM_VISUALS[type] || ITEM_VISUALS.default;
 }
 
+const RIG_EMOTION_TO_POSE = {
+  smile: 'idle',
+  neutral: 'idle',
+  frown: 'emotion_frown',
+  surprised: 'emotion_surprised',
+  sleepy: 'emotion_sleepy'
+};
+const RIG_WALK_KEEP_ALIVE = 520;
+
 function createItemCard(item, options={}){
   const visuals = getItemVisual(item.type);
   const card=document.createElement('div');
@@ -334,6 +343,7 @@ function renderEmotionPanel(){
     const fallback=EMOTIONS[0]?.value || 'smile';
     select.value=fallback;
     mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: select.value || 'smile'}));
+    updateEmotionRig(mePos, mePos.appearance.emotion);
     myAppearance = Object.assign({}, mePos.appearance);
     localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
     drawStage();
@@ -346,6 +356,7 @@ function renderEmotionPanel(){
       const next=select.value || 'smile';
       if(mePos.appearance?.emotion===next) return;
       mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: next}));
+      updateEmotionRig(mePos, mePos.appearance.emotion);
       myAppearance = Object.assign({}, mePos.appearance);
       localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
       drawStage(); drawCharPreview(); sendAppearance();
@@ -377,11 +388,85 @@ const AVATAR_CANVAS_PREVIEW={width:220,height:260};
 const AVATAR_BASELINE_MARGIN=12;
 const AVATAR_FONT_FAMILY='Inter,system-ui';
 const RENDER_MODE_KEY='cp_render_mode';
-const AVAILABLE_RENDER_MODES=['canvas','svg'];
+const AVAILABLE_RENDER_MODES=['canvas','svg','vector'];
 const stagePlayers=new Map();
 const SVG_NS='http://www.w3.org/2000/svg';
 let previewCharacter=null;
 let svgReadyPromise=null;
+
+function ensureRigState(target){
+  if(!target) return null;
+  const emotion=(target.appearance && target.appearance.emotion) || 'smile';
+  const basePose=RIG_EMOTION_TO_POSE[emotion] || 'idle';
+  if(!target.rig || typeof target.rig!=='object'){
+    target.rig={
+      emotion,
+      emotionPose: basePose,
+      pose: null,
+      animation: null,
+      lastEmotionAt: Date.now(),
+      lastMoveAt: 0,
+      lastDirection: 'right'
+    };
+  }else{
+    if(target.rig.emotion!==emotion){
+      target.rig.emotion=emotion;
+    }
+    if(!target.rig.emotionPose){
+      target.rig.emotionPose=basePose;
+    }
+    if(!target.rig.lastDirection){
+      target.rig.lastDirection='right';
+    }
+  }
+  return target.rig;
+}
+
+function updateEmotionRig(target, emotion){
+  if(!target) return null;
+  const rig=ensureRigState(target);
+  const validEmotion=VALID_EMOTIONS.has(emotion)?emotion:(rig?.emotion||'smile');
+  rig.emotion=validEmotion;
+  rig.emotionPose=RIG_EMOTION_TO_POSE[validEmotion] || 'idle';
+  rig.lastEmotionAt=Date.now();
+  return rig;
+}
+
+function activateRigWalk(target, direction){
+  if(!target) return null;
+  const rig=ensureRigState(target);
+  const now=Date.now();
+  const dir=(direction==='left')?'left':'right';
+  const current=rig.animation;
+  let startedAt=now;
+  if(current && current.name==='walk' && current.direction===dir && Number.isFinite(current.startedAt)){
+    startedAt=current.startedAt;
+  }
+  rig.animation={
+    name:'walk',
+    direction:dir,
+    startedAt,
+    weight:1
+  };
+  rig.lastMoveAt=now;
+  rig.lastDirection=dir;
+  return rig.animation;
+}
+
+function touchRigPlayback(target){
+  if(!target || !target.rig) return;
+  const rig=target.rig;
+  const now=Date.now();
+  if(rig.animation && rig.animation.name==='walk'){
+    if(!Number.isFinite(rig.lastMoveAt) || now-rig.lastMoveAt>RIG_WALK_KEEP_ALIVE){
+      rig.animation=null;
+    }
+  }
+  if(!rig.emotionPose){
+    const emotion=(target.appearance && target.appearance.emotion) || rig.emotion || 'smile';
+    rig.emotionPose=RIG_EMOTION_TO_POSE[emotion] || 'idle';
+  }
+}
 
 function ensureSvgReady(){
   const renderer=window.SVGCharacterRenderer;
@@ -493,8 +578,10 @@ function createStagePlayerElement(name,{withName=true,showChat=true,preview=fals
     renderMode:'canvas'
   };
 }
-let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender},
+let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender,rig:{}},
     others={};
+
+ensureRigState(mePos);
 
 const CHAT_BUBBLE_DURATION = 4200;
 
@@ -539,76 +626,90 @@ function getStageBounds(){
     height:stage?.clientHeight||DEFAULT_STAGE_SIZE.height
   };
 }
-function applyCharacterToElement(entry, info, options={}){
+async function applyCharacterToElement(entry, info, options={}){
   if(!entry || !entry.ctx) return;
   const renderer=window.CharacterRenderer;
   const svgRenderer=window.SVGCharacterRenderer;
   if(!renderer || typeof renderer.draw!=='function') return;
-  if(typeof renderer.isReady==='function' && !renderer.isReady()){
-    if(typeof window.requestAnimationFrame==='function'){
-      window.requestAnimationFrame(()=>applyCharacterToElement(entry, info, options));
+  try{
+    if(typeof renderer.ensureRigLoaded==='function'){
+      try{
+        await renderer.ensureRigLoaded();
+      }catch(loadErr){
+        console.warn('[Location] rig load failed', loadErr);
+      }
     }
-    return;
-  }
-  const canvas=entry.canvas;
-  const ctx=entry.ctx;
-  const baseWidth=entry.canvasWidth || canvas.width;
-  const baseHeight=entry.canvasHeight || canvas.height;
-  const desiredMode=(options.renderMode && AVAILABLE_RENDER_MODES.includes(options.renderMode)) ? options.renderMode : currentRenderMode;
-  const ratio=Math.max(1, window.devicePixelRatio || 1);
-  const ensureCanvasDimensions=()=>{
-    if(entry.pixelRatio!==ratio){
-      canvas.width=Math.round(baseWidth*ratio);
-      canvas.height=Math.round(baseHeight*ratio);
-      canvas.style.width=`${baseWidth}px`;
-      canvas.style.height=`${baseHeight}px`;
-      entry.pixelRatio=ratio;
+    if(typeof renderer.isReady==='function' && !renderer.isReady()){
+      if(typeof window.requestAnimationFrame==='function'){
+        window.requestAnimationFrame(()=>{
+          applyCharacterToElement(entry, info, options).catch(()=>{});
+        });
+      }
+      return;
     }
-    if(typeof ctx.resetTransform==='function'){
-      ctx.resetTransform();
-    }else if(typeof ctx.setTransform==='function'){
-      ctx.setTransform(1,0,0,1,0,0);
-    }
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    if(ratio!==1){ ctx.scale(ratio, ratio); }
-  };
-  const drawScale = options.scale!=null?options.scale:(entry.scale!=null?entry.scale:AVATAR_STAGE_SCALE);
-  const showChat = options.showChat!=null?options.showChat:(entry.showChat!==undefined?entry.showChat:true);
-  const withName = options.withName!=null?options.withName:(entry.withName!==undefined?entry.withName:true);
-  const preview = options.preview!=null?options.preview:!!entry.preview;
-  const baselineMargin = options.baselineMargin!=null?options.baselineMargin:AVATAR_BASELINE_MARGIN;
-  const chatMaxWidth = options.chatMaxWidth!=null?options.chatMaxWidth:Math.max(120, baseWidth-40);
-  const equip=Object.assign({}, info.equip||{});
-  const appearance=hydrateAppearance(info.appearance);
-  const gender=(info.gender||myGender||'other');
-  const shoeOffset=(equip.shoes?22:21)*drawScale;
-  const baseline=(options.baseline!=null?options.baseline:(baseHeight-baselineMargin));
-  const drawState={
-    name:info.name,
-    chat:showChat?info.chat:null,
-    equip,
-    appearance,
-    gender,
-    x:baseWidth/2,
-    y:baseline-shoeOffset
-  };
-  const rendererOptions={
-    scale:drawScale,
-    withName,
-    showChat,
-    preview,
-    fontFamily:AVATAR_FONT_FAMILY,
-    chatFontFamily:AVATAR_FONT_FAMILY,
-    nameFontFamily:AVATAR_FONT_FAMILY,
-    chatMaxWidth,
-    shadow:options.shadow,
-    headRadiusMultiplier:options.headRadiusMultiplier,
-    nameColor:options.nameColor,
-    nameFontPx:options.nameFontPx,
-    chatFontPx:options.chatFontPx,
-    chatScale:options.chatScale,
-    nameFontWeight:options.nameFontWeight
-  };
+    const canvas=entry.canvas;
+    const ctx=entry.ctx;
+    const baseWidth=entry.canvasWidth || canvas.width;
+    const baseHeight=entry.canvasHeight || canvas.height;
+    const desiredMode=(options.renderMode && AVAILABLE_RENDER_MODES.includes(options.renderMode)) ? options.renderMode : currentRenderMode;
+    const ratio=Math.max(1, window.devicePixelRatio || 1);
+    const ensureCanvasDimensions=()=>{
+      if(entry.pixelRatio!==ratio){
+        canvas.width=Math.round(baseWidth*ratio);
+        canvas.height=Math.round(baseHeight*ratio);
+        canvas.style.width=`${baseWidth}px`;
+        canvas.style.height=`${baseHeight}px`;
+        entry.pixelRatio=ratio;
+      }
+      if(typeof ctx.resetTransform==='function'){
+        ctx.resetTransform();
+      }else if(typeof ctx.setTransform==='function'){
+        ctx.setTransform(1,0,0,1,0,0);
+      }
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      if(ratio!==1){ ctx.scale(ratio, ratio); }
+    };
+    const drawScale = options.scale!=null?options.scale:(entry.scale!=null?entry.scale:AVATAR_STAGE_SCALE);
+    const showChat = options.showChat!=null?options.showChat:(entry.showChat!==undefined?entry.showChat:true);
+    const withName = options.withName!=null?options.withName:(entry.withName!==undefined?entry.withName:true);
+    const preview = options.preview!=null?options.preview:!!entry.preview;
+    const baselineMargin = options.baselineMargin!=null?options.baselineMargin:AVATAR_BASELINE_MARGIN;
+    const chatMaxWidth = options.chatMaxWidth!=null?options.chatMaxWidth:Math.max(120, baseWidth-40);
+    const equip=Object.assign({}, info.equip||{});
+    const appearance=hydrateAppearance(info.appearance);
+    info.appearance=appearance;
+    const gender=(info.gender||myGender||'other');
+    const shoeOffset=(equip.shoes?22:21)*drawScale;
+    const baseline=(options.baseline!=null?options.baseline:(baseHeight-baselineMargin));
+    const rigState=ensureRigState(info);
+    touchRigPlayback(info);
+    const drawState={
+      name:info.name,
+      chat:showChat?info.chat:null,
+      equip,
+      appearance,
+      gender,
+      x:baseWidth/2,
+      y:baseline-shoeOffset,
+      rig:rigState
+    };
+    const rendererOptions={
+      scale:drawScale,
+      withName,
+      showChat,
+      preview,
+      fontFamily:AVATAR_FONT_FAMILY,
+      chatFontFamily:AVATAR_FONT_FAMILY,
+      nameFontFamily:AVATAR_FONT_FAMILY,
+      chatMaxWidth,
+      shadow:options.shadow,
+      headRadiusMultiplier:options.headRadiusMultiplier,
+      nameColor:options.nameColor,
+      nameFontPx:options.nameFontPx,
+      chatFontPx:options.chatFontPx,
+      chatScale:options.chatScale,
+      nameFontWeight:options.nameFontWeight
+    };
   let renderedWithSvg=false;
   if(desiredMode==='svg' && svgRenderer && typeof svgRenderer.draw==='function'){
     if(entry.svgWrapper){
@@ -626,22 +727,39 @@ function applyCharacterToElement(entry, info, options={}){
           ensureSvgReady().then(()=>{
             if(currentRenderMode==='svg'){
               const retryOptions=Object.assign({}, rendererOptions, {renderMode:'svg', __svgRetry:true});
-              applyCharacterToElement(entry, info, retryOptions);
+              applyCharacterToElement(entry, info, retryOptions).catch(()=>{});
             }
           }).catch(()=>{});
         }
       }
     }
   }
-  if(!renderedWithSvg){
-    if(entry.svgWrapper){
-      entry.svgWrapper.hidden=true;
-      entry.svgWrapper.setAttribute('aria-hidden','true');
+    if(!renderedWithSvg){
+      if(entry.svgWrapper){
+        entry.svgWrapper.hidden=true;
+        entry.svgWrapper.setAttribute('aria-hidden','true');
+      }
+      entry.canvas.hidden=false;
+      ensureCanvasDimensions();
+      let renderedWithVector=false;
+      if(desiredMode==='vector' && typeof renderer.drawVector==='function'){
+        try{
+          const vectorResult=await renderer.drawVector(canvas, drawState, rendererOptions);
+          if(vectorResult!==null){
+            renderedWithVector=true;
+            entry.renderMode='vector';
+          }
+        }catch(err){
+          console.warn('[Location] vector render failed, falling back to canvas', err);
+        }
+      }
+      if(!renderedWithVector){
+        renderer.draw(ctx, drawState, rendererOptions);
+        entry.renderMode='canvas';
+      }
     }
-    entry.canvas.hidden=false;
-    ensureCanvasDimensions();
-    renderer.draw(ctx, drawState, rendererOptions);
-    entry.renderMode='canvas';
+  }catch(err){
+    console.error('[Location] failed to render character', err);
   }
 }
 function updateStagePlayer(player, isMe){
@@ -685,11 +803,15 @@ function drawStage(){
   clampMyPosition();
   const active=new Set();
   if(mePos?.name){
+    ensureRigState(mePos);
+    touchRigPlayback(mePos);
     updateStagePlayer(mePos, true);
     active.add(mePos.name);
   }
   Object.values(others).forEach(p=>{
     if(p?.name){
+      ensureRigState(p);
+      touchRigPlayback(p);
       updateStagePlayer(p, false);
       active.add(p.name);
     }
@@ -720,6 +842,8 @@ function drawCharPreview(){
   }
   previewCharacter.container.dataset.name=mePos.name;
   previewCharacter.container.setAttribute('aria-label', mePos.name);
+  ensureRigState(mePos);
+  touchRigPlayback(mePos);
   applyCharacterToElement(previewCharacter, mePos, {
     withName:false,
     showChat:false,
@@ -737,8 +861,15 @@ function clampMyPosition(){
 const goLeftBtn=document.getElementById("go-left");
 if(goLeftBtn){
   goLeftBtn.addEventListener("click", ()=>{
+    const prevX=mePos.x;
     mePos.x=Math.max(40, mePos.x-30);
     clampMyPosition();
+    ensureRigState(mePos);
+    if(mePos.x!==prevX){
+      activateRigWalk(mePos, mePos.x<prevX?'left':'right');
+    }else if(mePos.rig && mePos.rig.animation && mePos.rig.animation.name==='walk'){
+      mePos.rig.lastMoveAt=Date.now();
+    }
     sendMove();
     drawStage();
   });
@@ -746,8 +877,15 @@ if(goLeftBtn){
 const goRightBtn=document.getElementById("go-right");
 if(goRightBtn){
   goRightBtn.addEventListener("click", ()=>{
+    const prevX=mePos.x;
     mePos.x=Math.min(getStageBounds().width-40, mePos.x+30);
     clampMyPosition();
+    ensureRigState(mePos);
+    if(mePos.x!==prevX){
+      activateRigWalk(mePos, mePos.x<prevX?'left':'right');
+    }else if(mePos.rig && mePos.rig.animation && mePos.rig.animation.name==='walk'){
+      mePos.rig.lastMoveAt=Date.now();
+    }
     sendMove();
     drawStage();
   });
@@ -761,6 +899,7 @@ async function refreshAvatar(){
   mePos.equip = st.slots || {};
   const normalized = hydrateAppearance(st.appearance || mePos.appearance || {});
   mePos.appearance = Object.assign({}, normalized);
+  updateEmotionRig(mePos, mePos.appearance.emotion);
   myAppearance = Object.assign({}, normalized);
   localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
   if(typeof st.gender === 'string'){
@@ -790,6 +929,7 @@ function connectWS(){
       if(d.me){
         mePos.x=d.me.x; mePos.y=d.me.y; mePos.equip=d.me.equip||{};
         mePos.appearance = hydrateAppearance(d.me.appearance || mePos.appearance);
+        updateEmotionRig(mePos, mePos.appearance.emotion);
         myAppearance = Object.assign({}, mePos.appearance);
         localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
         if(typeof d.me.gender === 'string'){
@@ -807,14 +947,37 @@ function connectWS(){
         if(p.name===mePos.name) return;
         const existing=prevOthers?.[p.name];
         if(existing){
+          const prevX=existing.x;
           existing.x=p.x;
           existing.y=p.y;
           existing.equip=p.equip||{};
           existing.appearance=hydrateAppearance(p.appearance);
           existing.gender=p.gender||existing.gender||'other';
+          ensureRigState(existing);
+          updateEmotionRig(existing, existing.appearance.emotion);
+          if(Number.isFinite(prevX) && Number.isFinite(p.x) && Math.abs(p.x-prevX)>0.5){
+            activateRigWalk(existing, p.x<prevX?'left':'right');
+          }else{
+            if(existing.rig && existing.rig.animation && existing.rig.animation.name==='walk'){
+              existing.rig.lastMoveAt=Date.now();
+            }
+            touchRigPlayback(existing);
+          }
           others[p.name]=existing;
         }else{
-          others[p.name]={name:p.name,x:p.x,y:p.y,equip:p.equip||{},appearance:hydrateAppearance(p.appearance),gender:p.gender||'other'};
+          const newcomer={
+            name:p.name,
+            x:p.x,
+            y:p.y,
+            equip:p.equip||{},
+            appearance:hydrateAppearance(p.appearance),
+            gender:p.gender||'other',
+            rig:{}
+          };
+          ensureRigState(newcomer);
+          updateEmotionRig(newcomer, newcomer.appearance.emotion);
+          touchRigPlayback(newcomer);
+          others[p.name]=newcomer;
         }
         seen.add(p.name);
       });
@@ -827,9 +990,88 @@ function connectWS(){
       }
       drawStage(); drawCharPreview();
     }
-    else if(d.type==="move"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:d.x,y:d.y,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].x=d.x; others[d.name].y=d.y; drawStage(); }
-    else if(d.type==="state"){ if(d.name===mePos.name) return; (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].equip=d.equip||{}; if(d.appearance) others[d.name].appearance=hydrateAppearance(d.appearance); if(typeof d.gender==='string') others[d.name].gender=d.gender; drawStage(); }
-    else if(d.type==="appearance"){ if(d.name===mePos.name){ mePos.appearance=hydrateAppearance(d.appearance||mePos.appearance); myAppearance=Object.assign({}, mePos.appearance); localStorage.setItem('cp_appearance', JSON.stringify(myAppearance)); if(typeof d.gender==='string'){ mePos.gender=d.gender; myGender=d.gender; localStorage.setItem('cp_gender', myGender); updateGenderBadge(myGender); } renderEmotionPanel(); drawStage(); drawCharPreview(); return; } (others[d.name] ||= {name:d.name,x:520,y:340,equip:{},appearance:hydrateAppearance({}),gender:'other'}); others[d.name].appearance=hydrateAppearance(d.appearance); if(typeof d.gender==='string') others[d.name].gender=d.gender; drawStage(); }
+    else if(d.type==="move"){
+      if(d.name===mePos.name) return;
+      const entry=(others[d.name] ||= {
+        name:d.name,
+        x:d.x,
+        y:d.y,
+        equip:{},
+        appearance:hydrateAppearance({}),
+        gender:'other',
+        rig:{}
+      });
+      const prevX=entry.x;
+      entry.x=d.x;
+      entry.y=d.y;
+      ensureRigState(entry);
+      updateEmotionRig(entry, entry.appearance?.emotion || 'smile');
+      if(Number.isFinite(prevX) && Number.isFinite(d.x) && Math.abs(d.x-prevX)>0.5){
+        activateRigWalk(entry, d.x<prevX?'left':'right');
+      }else{
+        if(entry.rig && entry.rig.animation && entry.rig.animation.name==='walk'){
+          entry.rig.lastMoveAt=Date.now();
+        }
+        touchRigPlayback(entry);
+      }
+      drawStage();
+    }
+    else if(d.type==="state"){
+      if(d.name===mePos.name) return;
+      const entry=(others[d.name] ||= {
+        name:d.name,
+        x:520,
+        y:340,
+        equip:{},
+        appearance:hydrateAppearance({}),
+        gender:'other',
+        rig:{}
+      });
+      entry.equip=d.equip||{};
+      if(d.appearance){
+        entry.appearance=hydrateAppearance(d.appearance);
+        updateEmotionRig(entry, entry.appearance.emotion);
+      }
+      ensureRigState(entry);
+      if(typeof d.gender==='string'){
+        entry.gender=d.gender;
+      }
+      drawStage();
+    }
+    else if(d.type==="appearance"){
+      if(d.name===mePos.name){
+        mePos.appearance=hydrateAppearance(d.appearance||mePos.appearance);
+        updateEmotionRig(mePos, mePos.appearance.emotion);
+        myAppearance=Object.assign({}, mePos.appearance);
+        localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+        if(typeof d.gender==='string'){
+          mePos.gender=d.gender;
+          myGender=d.gender;
+          localStorage.setItem('cp_gender', myGender);
+          updateGenderBadge(myGender);
+        }
+        renderEmotionPanel();
+        drawStage();
+        drawCharPreview();
+        return;
+      }
+      const entry=(others[d.name] ||= {
+        name:d.name,
+        x:520,
+        y:340,
+        equip:{},
+        appearance:hydrateAppearance({}),
+        gender:'other',
+        rig:{}
+      });
+      entry.appearance=hydrateAppearance(d.appearance);
+      updateEmotionRig(entry, entry.appearance.emotion);
+      ensureRigState(entry);
+      if(typeof d.gender==='string'){
+        entry.gender=d.gender;
+      }
+      drawStage();
+    }
     else if(d.type==="coins"){ if(d.name===mePos.name){ refreshMe(); } }
     else if(d.type==="system"){ sys(d.text); loadOnline(); }
   }catch(e){ console.error(e); } };
@@ -853,10 +1095,12 @@ document.addEventListener("click",(e)=>{ if(e.target && e.target.id==="claim") c
     if(ap){
       myAppearance = hydrateAppearance(ap);
       mePos.appearance = Object.assign({}, myAppearance);
+      updateEmotionRig(mePos, mePos.appearance.emotion);
       localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
     }
   }catch(e){
     mePos.appearance = Object.assign({}, myAppearance);
+    updateEmotionRig(mePos, mePos.appearance.emotion);
   }
   renderEmotionPanel();
   await refreshMe(); await loadOnline(); await loadInventory(); await refreshAvatar(); drawStage(); connectWS();

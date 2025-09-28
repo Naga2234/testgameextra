@@ -1,0 +1,369 @@
+{
+  "meta": {
+    "name": "avatar-humanoid",
+    "version": "1.0.0",
+    "unit": "px",
+    "description": "Rig definition for the stage character with humanoid proportions"
+  },
+  "bones": [
+    {"id": "root", "parent": null, "length": 0, "restRotation": 0},
+    {"id": "pelvis", "parent": "root", "length": 6, "restRotation": 0, "shape": {"type": "pivot"}},
+    {"id": "spine", "parent": "pelvis", "length": 26, "restRotation": 0, "shape": {"type": "capsule", "radiusStart": 6.2, "radiusEnd": 4.8}},
+    {"id": "neck", "parent": "spine", "length": 6, "restRotation": 0, "shape": {"type": "capsule", "radiusStart": 3.4, "radiusEnd": 2.8}},
+    {"id": "head", "parent": "neck", "length": 10, "restRotation": 0, "shape": {"type": "circle", "radius": 12}},
+    {
+      "id": "leftUpperArm",
+      "parent": "spine",
+      "length": 18,
+      "restRotation": -8,
+      "shape": {"type": "capsule", "radiusStart": 4.1, "radiusEnd": 3.2, "stroke": 0.6, "highlight": 0.4}
+    },
+    {
+      "id": "leftLowerArm",
+      "parent": "leftUpperArm",
+      "length": 17,
+      "restRotation": -6,
+      "shape": {"type": "capsule", "radiusStart": 3.2, "radiusEnd": 2.4, "stroke": 0.5, "highlight": 0.35}
+    },
+    {
+      "id": "leftHand",
+      "parent": "leftLowerArm",
+      "length": 6,
+      "restRotation": -2,
+      "shape": {"type": "capsule", "radiusStart": 2.4, "radiusEnd": 2.1, "stroke": 0.45, "highlight": 0.3}
+    },
+    {
+      "id": "rightUpperArm",
+      "parent": "spine",
+      "length": 18,
+      "restRotation": 8,
+      "shape": {"type": "capsule", "radiusStart": 4.1, "radiusEnd": 3.2, "stroke": 0.6, "highlight": 0.4}
+    },
+    {
+      "id": "rightLowerArm",
+      "parent": "rightUpperArm",
+      "length": 17,
+      "restRotation": 6,
+      "shape": {"type": "capsule", "radiusStart": 3.2, "radiusEnd": 2.4, "stroke": 0.5, "highlight": 0.35}
+    },
+    {
+      "id": "rightHand",
+      "parent": "rightLowerArm",
+      "length": 6,
+      "restRotation": 2,
+      "shape": {"type": "capsule", "radiusStart": 2.4, "radiusEnd": 2.1, "stroke": 0.45, "highlight": 0.3}
+    },
+    {
+      "id": "leftUpperLeg",
+      "parent": "pelvis",
+      "length": 24,
+      "restRotation": 4,
+      "shape": {"type": "capsule", "radiusStart": 5.4, "radiusEnd": 3.8, "stroke": 0.75, "highlight": 0.5, "innerRadius": 3.6, "outerRadius": 5.6}
+    },
+    {
+      "id": "leftLowerLeg",
+      "parent": "leftUpperLeg",
+      "length": 24,
+      "restRotation": -2,
+      "shape": {"type": "capsule", "radiusStart": 3.6, "radiusEnd": 2.6, "stroke": 0.6, "highlight": 0.45, "innerRadius": 2.4, "outerRadius": 3.6}
+    },
+    {
+      "id": "leftFoot",
+      "parent": "leftLowerLeg",
+      "length": 8,
+      "restRotation": 6,
+      "shape": {
+        "type": "foot",
+        "innerWidth": 1.8,
+        "outerWidth": 2.6,
+        "toeLength": 3.4,
+        "height": 2.4,
+        "ankleWidth": 1.4
+      }
+    },
+    {
+      "id": "rightUpperLeg",
+      "parent": "pelvis",
+      "length": 24,
+      "restRotation": -4,
+      "shape": {"type": "capsule", "radiusStart": 5.4, "radiusEnd": 3.8, "stroke": 0.75, "highlight": 0.5, "innerRadius": 3.6, "outerRadius": 5.6}
+    },
+    {
+      "id": "rightLowerLeg",
+      "parent": "rightUpperLeg",
+      "length": 24,
+      "restRotation": 2,
+      "shape": {"type": "capsule", "radiusStart": 3.6, "radiusEnd": 2.6, "stroke": 0.6, "highlight": 0.45, "innerRadius": 2.4, "outerRadius": 3.6}
+    },
+    {
+      "id": "rightFoot",
+      "parent": "rightLowerLeg",
+      "length": 8,
+      "restRotation": -6,
+      "shape": {
+        "type": "foot",
+        "innerWidth": 1.8,
+        "outerWidth": 2.6,
+        "toeLength": 3.4,
+        "height": 2.4,
+        "ankleWidth": 1.4
+      }
+    }
+  ],
+  "constraints": [
+    {"bone": "spine", "type": "rotation", "min": -12, "max": 10},
+    {"bone": "neck", "type": "rotation", "min": -20, "max": 20},
+    {"bone": "leftUpperArm", "type": "rotation", "min": -85, "max": 55},
+    {"bone": "leftLowerArm", "type": "rotation", "min": -10, "max": 135},
+    {"bone": "leftHand", "type": "rotation", "min": -35, "max": 45},
+    {"bone": "rightUpperArm", "type": "rotation", "min": -55, "max": 85},
+    {"bone": "rightLowerArm", "type": "rotation", "min": -10, "max": 135},
+    {"bone": "rightHand", "type": "rotation", "min": -45, "max": 35},
+    {"bone": "leftUpperLeg", "type": "rotation", "min": -12, "max": 65},
+    {"bone": "leftLowerLeg", "type": "rotation", "min": -5, "max": 140},
+    {"bone": "leftFoot", "type": "rotation", "min": -32, "max": 32},
+    {"bone": "rightUpperLeg", "type": "rotation", "min": -65, "max": 12},
+    {"bone": "rightLowerLeg", "type": "rotation", "min": -5, "max": 140},
+    {"bone": "rightFoot", "type": "rotation", "min": -32, "max": 32}
+  ],
+  "poses": {
+    "idle": {
+      "description": "Relaxed neutral stance",
+      "root": {"offset": {"x": 0, "y": 0}},
+      "bones": {
+        "pelvis": {"rotation": 0},
+        "spine": {"rotation": 0},
+        "neck": {"rotation": -2},
+        "head": {"rotation": 4},
+        "leftUpperArm": {"rotation": -12},
+        "leftLowerArm": {"rotation": -4},
+        "leftHand": {"rotation": 2},
+        "rightUpperArm": {"rotation": 12},
+        "rightLowerArm": {"rotation": 6},
+        "rightHand": {"rotation": -4},
+        "leftUpperLeg": {"rotation": 4},
+        "leftLowerLeg": {"rotation": 2},
+        "leftFoot": {"rotation": 0},
+        "rightUpperLeg": {"rotation": -4},
+        "rightLowerLeg": {"rotation": -2},
+        "rightFoot": {"rotation": 0}
+      }
+    },
+    "idle_relax": {
+      "description": "Idle counter pose for subtle breathing",
+      "root": {"offset": {"x": 0, "y": 0.5}},
+      "bones": {
+        "spine": {"rotation": 2},
+        "neck": {"rotation": 0},
+        "head": {"rotation": 2},
+        "leftUpperArm": {"rotation": -9},
+        "leftLowerArm": {"rotation": 0},
+        "leftHand": {"rotation": 4},
+        "rightUpperArm": {"rotation": 9},
+        "rightLowerArm": {"rotation": 0},
+        "rightHand": {"rotation": -6},
+        "leftUpperLeg": {"rotation": 2},
+        "leftLowerLeg": {"rotation": 6},
+        "leftFoot": {"rotation": 2},
+        "rightUpperLeg": {"rotation": -2},
+        "rightLowerLeg": {"rotation": -6},
+        "rightFoot": {"rotation": -2}
+      }
+    },
+    "walk_contact_left": {
+      "description": "Walk cycle pose - left foot contact",
+      "root": {"offset": {"x": -0.4, "y": 0.8}},
+      "bones": {
+        "spine": {"rotation": -2},
+        "leftUpperArm": {"rotation": -32},
+        "leftLowerArm": {"rotation": -12},
+        "leftHand": {"rotation": 6},
+        "rightUpperArm": {"rotation": 28},
+        "rightLowerArm": {"rotation": 18},
+        "rightHand": {"rotation": -6},
+        "leftUpperLeg": {"rotation": 26},
+        "leftLowerLeg": {"rotation": -16},
+        "leftFoot": {"rotation": -12},
+        "rightUpperLeg": {"rotation": -18},
+        "rightLowerLeg": {"rotation": 12},
+        "rightFoot": {"rotation": 16}
+      }
+    },
+    "walk_passing_left": {
+      "description": "Walk cycle passing pose (left)",
+      "root": {"offset": {"x": -0.2, "y": -0.4}},
+      "bones": {
+        "spine": {"rotation": 2},
+        "leftUpperArm": {"rotation": -18},
+        "leftLowerArm": {"rotation": -6},
+        "leftHand": {"rotation": 4},
+        "rightUpperArm": {"rotation": 22},
+        "rightLowerArm": {"rotation": 14},
+        "rightHand": {"rotation": -4},
+        "leftUpperLeg": {"rotation": -6},
+        "leftLowerLeg": {"rotation": 28},
+        "leftFoot": {"rotation": 14},
+        "rightUpperLeg": {"rotation": 14},
+        "rightLowerLeg": {"rotation": -8},
+        "rightFoot": {"rotation": -10}
+      }
+    },
+    "walk_contact_right": {
+      "description": "Walk cycle pose - right foot contact",
+      "root": {"offset": {"x": 0.4, "y": 0.8}},
+      "bones": {
+        "spine": {"rotation": 2},
+        "leftUpperArm": {"rotation": -28},
+        "leftLowerArm": {"rotation": -18},
+        "leftHand": {"rotation": 6},
+        "rightUpperArm": {"rotation": 34},
+        "rightLowerArm": {"rotation": 12},
+        "rightHand": {"rotation": -4},
+        "leftUpperLeg": {"rotation": 18},
+        "leftLowerLeg": {"rotation": -12},
+        "leftFoot": {"rotation": 16},
+        "rightUpperLeg": {"rotation": -26},
+        "rightLowerLeg": {"rotation": 18},
+        "rightFoot": {"rotation": -12}
+      }
+    },
+    "walk_passing_right": {
+      "description": "Walk cycle passing pose (right)",
+      "root": {"offset": {"x": 0.2, "y": -0.4}},
+      "bones": {
+        "spine": {"rotation": -2},
+        "leftUpperArm": {"rotation": -22},
+        "leftLowerArm": {"rotation": -14},
+        "leftHand": {"rotation": 0},
+        "rightUpperArm": {"rotation": 18},
+        "rightLowerArm": {"rotation": 6},
+        "rightHand": {"rotation": -8},
+        "leftUpperLeg": {"rotation": 6},
+        "leftLowerLeg": {"rotation": -10},
+        "leftFoot": {"rotation": -10},
+        "rightUpperLeg": {"rotation": -12},
+        "rightLowerLeg": {"rotation": 32},
+        "rightFoot": {"rotation": 14}
+      }
+    },
+    "wave_start": {
+      "description": "Start of a friendly wave with right arm",
+      "bones": {
+        "spine": {"rotation": 3},
+        "rightUpperArm": {"rotation": -12},
+        "rightLowerArm": {"rotation": -24},
+        "rightHand": {"rotation": 18},
+        "leftUpperArm": {"rotation": -10},
+        "leftLowerArm": {"rotation": -6},
+        "leftHand": {"rotation": 2}
+      }
+    },
+    "wave_mid": {
+      "description": "Highest point of the wave",
+      "bones": {
+        "spine": {"rotation": 4},
+        "rightUpperArm": {"rotation": -36},
+        "rightLowerArm": {"rotation": -18},
+        "rightHand": {"rotation": 26},
+        "leftUpperArm": {"rotation": -8},
+        "leftLowerArm": {"rotation": -2},
+        "leftHand": {"rotation": 4}
+      }
+    },
+    "wave_end": {
+      "description": "Return from the wave gesture",
+      "bones": {
+        "spine": {"rotation": 2},
+        "rightUpperArm": {"rotation": -8},
+        "rightLowerArm": {"rotation": -12},
+        "rightHand": {"rotation": 12},
+        "leftUpperArm": {"rotation": -10},
+        "leftLowerArm": {"rotation": -4},
+        "leftHand": {"rotation": 2}
+      }
+    },
+    "emotion_frown": {
+      "description": "Stoic pose for frown emotion",
+      "root": {"offset": {"x": 0, "y": -0.6}},
+      "bones": {
+        "spine": {"rotation": -6},
+        "neck": {"rotation": -4},
+        "head": {"rotation": 0},
+        "leftUpperArm": {"rotation": -4},
+        "rightUpperArm": {"rotation": 4},
+        "leftUpperLeg": {"rotation": 6},
+        "rightUpperLeg": {"rotation": -6}
+      }
+    },
+    "emotion_surprised": {
+      "description": "Raised arms for surprised emotion",
+      "root": {"offset": {"x": 0, "y": -0.2}},
+      "bones": {
+        "spine": {"rotation": 6},
+        "neck": {"rotation": 6},
+        "head": {"rotation": 10},
+        "leftUpperArm": {"rotation": -48},
+        "leftLowerArm": {"rotation": -24},
+        "leftHand": {"rotation": 12},
+        "rightUpperArm": {"rotation": -42},
+        "rightLowerArm": {"rotation": -22},
+        "rightHand": {"rotation": 10}
+      }
+    },
+    "emotion_sleepy": {
+      "description": "Lowered relaxed limbs for sleepy emotion",
+      "root": {"offset": {"x": 0, "y": 1.1}},
+      "bones": {
+        "spine": {"rotation": -4},
+        "neck": {"rotation": -8},
+        "head": {"rotation": -6},
+        "leftUpperArm": {"rotation": -2},
+        "leftLowerArm": {"rotation": -2},
+        "leftHand": {"rotation": -4},
+        "rightUpperArm": {"rotation": 2},
+        "rightLowerArm": {"rotation": 2},
+        "rightHand": {"rotation": -2}
+      }
+    }
+  },
+  "animations": {
+    "idle": {
+      "duration": 2000,
+      "loop": true,
+      "frames": [
+        {"time": 0, "pose": "idle"},
+        {"time": 0.5, "pose": "idle_relax"},
+        {"time": 1, "pose": "idle"}
+      ]
+    },
+    "walk_left": {
+      "duration": 760,
+      "loop": true,
+      "frames": [
+        {"time": 0, "pose": "walk_contact_left"},
+        {"time": 0.25, "pose": "walk_passing_left"},
+        {"time": 0.5, "pose": "walk_contact_right"},
+        {"time": 0.75, "pose": "walk_passing_right"}
+      ]
+    },
+    "walk_right": {
+      "duration": 760,
+      "loop": true,
+      "frames": [
+        {"time": 0, "pose": "walk_contact_right"},
+        {"time": 0.25, "pose": "walk_passing_right"},
+        {"time": 0.5, "pose": "walk_contact_left"},
+        {"time": 0.75, "pose": "walk_passing_left"}
+      ]
+    },
+    "wave": {
+      "duration": 900,
+      "loop": false,
+      "frames": [
+        {"time": 0, "pose": "wave_start"},
+        {"time": 0.45, "pose": "wave_mid"},
+        {"time": 1, "pose": "wave_end"}
+      ]
+    }
+  }
+}
