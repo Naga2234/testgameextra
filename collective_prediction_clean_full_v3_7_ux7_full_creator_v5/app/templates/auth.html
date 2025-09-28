@@ -119,8 +119,10 @@
         </div>
 
         <div class="creator-right">
+          <div class="preview-header">
+            <div id="preview-emotion" class="preview-emotion"></div>
+          </div>
           <canvas id="preview" width="260" height="260"></canvas>
-          <div class="muted small">Превью персонажа</div>
         </div>
       </div>
     </div>
@@ -163,6 +165,21 @@ const EMOTIONS=[
   {value:'surprised',label:'Удивление',icon:'😯'},
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
+const previewEmotionEl=document.getElementById('preview-emotion');
+function getEmotionMeta(val){
+  return EMOTIONS.find(e=>e.value===val);
+}
+function updateEmotionBadge(){
+  if(!previewEmotionEl) return;
+  const meta=getEmotionMeta(state.emotion);
+  if(meta){
+    previewEmotionEl.textContent=`${meta.icon} ${meta.label}`;
+    previewEmotionEl.dataset.emotion=meta.value;
+  }else{
+    previewEmotionEl.textContent='';
+    previewEmotionEl.dataset.emotion='';
+  }
+}
 const GENDER_OUTFITS={
   male:{primary:'#3a6ea5',secondary:'#2e4f79',accent:'#1f2f57'},
   female:{primary:'#f19ad9',secondary:'#d16ec7',accent:'#ffd6ef'},
@@ -289,7 +306,10 @@ function makeStyles(){
 }
 function makeEmotions(){
   const select=document.getElementById('emotion-select');
-  if(!select) return;
+  if(!select){
+    updateEmotionBadge();
+    return;
+  }
   const current=state.emotion;
   select.innerHTML="";
   EMOTIONS.forEach(em=>{
@@ -306,10 +326,12 @@ function makeEmotions(){
     redrawPreview();
     syncAppearanceStorage();
   }
+  updateEmotionBadge();
   if(select.dataset.bound!=="1"){
     select.addEventListener('change',()=>{
       const next=select.value||'smile';
       state.emotion=next;
+      updateEmotionBadge();
       redrawPreview();
       syncAppearanceStorage();
     });
