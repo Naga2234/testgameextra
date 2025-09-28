@@ -31,9 +31,243 @@ const EMOTIONS = [
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
 const GENDER_OUTFITS={
-  male:{primary:'#3a6ea5',secondary:'#2e4f79',accent:'#1f2f57'},
-  female:{primary:'#f19ad9',secondary:'#d16ec7',accent:'#ffd6ef'},
-  other:{primary:'#4c8fca',secondary:'#3a6aa3',accent:'#9fd9ff'}
+  male:{
+    primary:'#3a6ea5',
+    secondary:'#2e4f79',
+    accent:'#1f2f57',
+    palette:{
+      upper:{
+        base:'#4f81c7',
+        highlight:'#7aa4dd',
+        shadow:'#2b4f82',
+        trim:'#1f2f57',
+        stroke:'#15223a',
+        equipped:{
+          base:'#3a6ea5',
+          highlight:'#5c8fd3',
+          shadow:'#1f3b64',
+          trim:'#0f2340',
+          stroke:'#09162a'
+        }
+      },
+      lower:{
+        base:'#2f4f7d',
+        highlight:'#4e6fa3',
+        shadow:'#1f3658',
+        trim:'#192a45',
+        stroke:'#111c2f',
+        equipped:{
+          base:'#274875',
+          highlight:'#4f77a5',
+          shadow:'#162a47',
+          trim:'#0d2039',
+          stroke:'#091326'
+        }
+      },
+      cloak:{
+        base:'#123863',
+        highlight:'#1f4e86',
+        shadow:'#0b2542',
+        edge:'#07192f',
+        stroke:'#061021',
+        lining:'#1e4b78',
+        equipped:{
+          base:'#0f3460',
+          highlight:'#1b4d84',
+          shadow:'#081d35',
+          edge:'#061326',
+          stroke:'#040b19',
+          lining:'#255a8d'
+        }
+      },
+      shoes:{
+        base:'#2c3f5e',
+        highlight:'#445a7c',
+        shadow:'#1c2538',
+        trim:'#152033',
+        stroke:'#0c1422',
+        equipped:{
+          base:'#263b57',
+          highlight:'#3c567c',
+          shadow:'#151f30',
+          trim:'#111b2c',
+          stroke:'#070f1b'
+        }
+      },
+      accessory:{
+        base:'#f3b234',
+        highlight:'#ffe38a',
+        shadow:'#b57a0d',
+        stroke:'#8a5a08',
+        chain:'#f5ce6a',
+        equipped:{
+          base:'#f7be3c',
+          highlight:'#ffe993',
+          shadow:'#b88411',
+          stroke:'#8d5f0a',
+          chain:'#f8d87b'
+        }
+      }
+    }
+  },
+  female:{
+    primary:'#f19ad9',
+    secondary:'#d16ec7',
+    accent:'#ffd6ef',
+    palette:{
+      upper:{
+        base:'#f3aee2',
+        highlight:'#ffd0ef',
+        shadow:'#d16ec7',
+        trim:'#ffebf9',
+        stroke:'#ba4ea8',
+        equipped:{
+          base:'#e97dce',
+          highlight:'#ffb9e6',
+          shadow:'#b34ea3',
+          trim:'#ffe0f3',
+          stroke:'#9d3b8e'
+        }
+      },
+      lower:{
+        base:'#d16ec7',
+        highlight:'#e997da',
+        shadow:'#a94f9f',
+        trim:'#ffccf1',
+        stroke:'#8a2f7e',
+        equipped:{
+          base:'#c35bb9',
+          highlight:'#e18cd5',
+          shadow:'#8f3d8f',
+          trim:'#ffc2ea',
+          stroke:'#7a2c73'
+        }
+      },
+      cloak:{
+        base:'#a056c7',
+        highlight:'#c479e0',
+        shadow:'#6f2d8d',
+        edge:'#5b2374',
+        stroke:'#46195b',
+        lining:'#d59af0',
+        equipped:{
+          base:'#8e48b6',
+          highlight:'#c67fe4',
+          shadow:'#5d237d',
+          edge:'#451861',
+          stroke:'#34114a',
+          lining:'#dca6f4'
+        }
+      },
+      shoes:{
+        base:'#b35ad4',
+        highlight:'#d98df0',
+        shadow:'#7e3a98',
+        trim:'#f2c0ff',
+        stroke:'#5e2873',
+        equipped:{
+          base:'#a349c5',
+          highlight:'#d27ce8',
+          shadow:'#6c2d8a',
+          trim:'#f5c9ff',
+          stroke:'#501f69'
+        }
+      },
+      accessory:{
+        base:'#f6b8d6',
+        highlight:'#ffe1f1',
+        shadow:'#c977a4',
+        stroke:'#aa628a',
+        chain:'#ffd9eb',
+        equipped:{
+          base:'#f7bfdc',
+          highlight:'#ffe7f5',
+          shadow:'#c977a4',
+          stroke:'#b06694',
+          chain:'#ffe3f3'
+        }
+      }
+    }
+  },
+  other:{
+    primary:'#4c8fca',
+    secondary:'#3a6aa3',
+    accent:'#9fd9ff',
+    palette:{
+      upper:{
+        base:'#5c9ed8',
+        highlight:'#88c1ee',
+        shadow:'#376fa7',
+        trim:'#a8ddff',
+        stroke:'#28527c',
+        equipped:{
+          base:'#4c8fca',
+          highlight:'#7ab3e3',
+          shadow:'#2c5d8f',
+          trim:'#b8e5ff',
+          stroke:'#1d4266'
+        }
+      },
+      lower:{
+        base:'#3a6aa3',
+        highlight:'#5a8cc3',
+        shadow:'#254771',
+        trim:'#7fb6e5',
+        stroke:'#1b3a5e',
+        equipped:{
+          base:'#315c8f',
+          highlight:'#5e8ec4',
+          shadow:'#203a62',
+          trim:'#8ac3f0',
+          stroke:'#152d4c'
+        }
+      },
+      cloak:{
+        base:'#2d5d8f',
+        highlight:'#4c81b3',
+        shadow:'#1c3b60',
+        edge:'#152d48',
+        stroke:'#0f1f35',
+        lining:'#6ca2d6',
+        equipped:{
+          base:'#285380',
+          highlight:'#4d82b5',
+          shadow:'#162f4f',
+          edge:'#10233a',
+          stroke:'#09192b',
+          lining:'#75aee0'
+        }
+      },
+      shoes:{
+        base:'#34627f',
+        highlight:'#4f7f99',
+        shadow:'#223f54',
+        trim:'#9bd4f5',
+        stroke:'#122733',
+        equipped:{
+          base:'#2d5873',
+          highlight:'#4c7c95',
+          shadow:'#1a3446',
+          trim:'#9bd4f5',
+          stroke:'#0e1d28'
+        }
+      },
+      accessory:{
+        base:'#8dd6f7',
+        highlight:'#c8f1ff',
+        shadow:'#4c9bbe',
+        stroke:'#3a7d98',
+        chain:'#b6e7ff',
+        equipped:{
+          base:'#9ae0ff',
+          highlight:'#d2f4ff',
+          shadow:'#4c9bbe',
+          stroke:'#3f89a6',
+          chain:'#c3edff'
+        }
+      }
+    }
+  }
 };
 
 const { drawHead, drawHair, drawExpression } = (window.AvatarDrawing || {});
@@ -334,11 +568,281 @@ function drawShadowMini(ctx2, x, baselineY, scale){
   ctx2.restore();
 }
 
+function mergeOutfitPalette(basePalette, equip={}){
+  const slots=['upper','lower','cloak','shoes','accessory'];
+  const merged={};
+  slots.forEach(slot=>{
+    const slotPalette=(basePalette||{})[slot]||{};
+    const {equipped, ...defaults}=slotPalette;
+    merged[slot]=Object.assign({}, defaults, (equip && equip[slot] && equipped)?equipped:{});
+  });
+  return merged;
+}
+
+function drawUpperOutfit(ctx2, palette, metrics, scale, options={}){
+  const {torsoX, torsoY, torsoWidth, torsoHeight, centerX}=metrics;
+  const {equip={}, gender='other'}=options;
+  const hasEquip=!!equip.upper;
+  const colors=palette.upper||{};
+  const baseColor=colors.base||'#5c7ab2';
+  const highlight=colors.highlight||baseColor;
+  const shadow=colors.shadow||baseColor;
+  ctx2.save();
+  const grad=ctx2.createLinearGradient(torsoX, torsoY, torsoX, torsoY+torsoHeight);
+  grad.addColorStop(0, highlight);
+  grad.addColorStop(0.55, baseColor);
+  grad.addColorStop(1, shadow);
+  ctx2.fillStyle=grad;
+  ctx2.beginPath();
+  if(!hasEquip && gender==='female'){
+    ctx2.moveTo(torsoX-2*scale, torsoY+5*scale);
+    ctx2.quadraticCurveTo(centerX, torsoY-4*scale, torsoX+torsoWidth+2*scale, torsoY+5*scale);
+    ctx2.lineTo(torsoX+torsoWidth-5*scale, torsoY+torsoHeight-1*scale);
+    ctx2.quadraticCurveTo(centerX, torsoY+torsoHeight+5*scale, torsoX+5*scale, torsoY+torsoHeight-1*scale);
+  }else{
+    ctx2.moveTo(torsoX-2*scale, torsoY+4*scale);
+    ctx2.quadraticCurveTo(centerX, torsoY-2*scale, torsoX+torsoWidth+2*scale, torsoY+4*scale);
+    ctx2.lineTo(torsoX+torsoWidth-3*scale, torsoY+torsoHeight-3*scale);
+    ctx2.quadraticCurveTo(centerX, torsoY+torsoHeight+1.5*scale, torsoX+3*scale, torsoY+torsoHeight-3*scale);
+  }
+  ctx2.closePath();
+  ctx2.fill();
+
+  if(colors.stroke){
+    ctx2.strokeStyle=colors.stroke;
+    ctx2.lineWidth=Math.max(1,1.2*scale);
+    ctx2.stroke();
+  }
+
+  if(colors.trim){
+    const beltHeight=Math.max(1.6*scale, scale);
+    const beltY=torsoY+torsoHeight*0.55;
+    ctx2.fillStyle=colors.trim;
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX+4*scale, beltY);
+    ctx2.quadraticCurveTo(centerX, beltY+0.5*scale, torsoX+torsoWidth-4*scale, beltY);
+    ctx2.lineTo(torsoX+torsoWidth-5*scale, beltY+beltHeight);
+    ctx2.quadraticCurveTo(centerX, beltY+beltHeight+0.5*scale, torsoX+5*scale, beltY+beltHeight);
+    ctx2.closePath();
+    ctx2.fill();
+  }
+
+  if(colors.highlight && hasEquip){
+    ctx2.strokeStyle=colors.highlight;
+    ctx2.lineWidth=0.8*scale;
+    ctx2.beginPath();
+    ctx2.moveTo(centerX, torsoY+3*scale);
+    ctx2.lineTo(centerX, torsoY+torsoHeight-4*scale);
+    ctx2.stroke();
+  }
+
+  ctx2.restore();
+}
+
+function drawLowerOutfit(ctx2, palette, metrics, scale, options={}){
+  const {torsoX, torsoWidth, hipY, kneeY, shoeTop, centerX}=metrics;
+  const {equip={}, gender='other'}=options;
+  const hasEquip=!!equip.lower;
+  const colors=palette.lower||{};
+  const baseColor=colors.base||'#4a668d';
+  const highlight=colors.highlight||baseColor;
+  const shadow=colors.shadow||baseColor;
+  ctx2.save();
+  const grad=ctx2.createLinearGradient(torsoX, hipY, torsoX, shoeTop);
+  grad.addColorStop(0, highlight);
+  grad.addColorStop(0.65, baseColor);
+  grad.addColorStop(1, shadow);
+  const drawTrim=()=>{
+    if(!colors.trim) return;
+    ctx2.strokeStyle=colors.trim;
+    ctx2.lineWidth=0.8*scale;
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX+4*scale, hipY+1.5*scale);
+    ctx2.quadraticCurveTo(centerX, hipY+4*scale, torsoX+torsoWidth-4*scale, hipY+1.5*scale);
+    ctx2.stroke();
+  };
+
+  if(!hasEquip && gender==='female'){
+    ctx2.fillStyle=grad;
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX+2*scale, hipY);
+    ctx2.quadraticCurveTo(centerX, hipY+6*scale, torsoX+torsoWidth-2*scale, hipY);
+    ctx2.lineTo(torsoX+torsoWidth+4*scale, shoeTop-1*scale);
+    ctx2.quadraticCurveTo(centerX, shoeTop+4*scale, torsoX-0.5*scale, shoeTop-1*scale);
+    ctx2.closePath();
+    ctx2.fill();
+    if(colors.stroke){
+      ctx2.strokeStyle=colors.stroke;
+      ctx2.lineWidth=Math.max(1,1.1*scale);
+      ctx2.stroke();
+    }
+    drawTrim();
+    ctx2.restore();
+    return;
+  }
+
+  const legInset=3*scale;
+  const crotchWidth=4*scale;
+  const legWidth=(torsoWidth-crotchWidth)/2;
+  ctx2.fillStyle=grad;
+
+  // Left leg panel
+  ctx2.beginPath();
+  ctx2.moveTo(torsoX+legInset, hipY);
+  ctx2.quadraticCurveTo(torsoX+legInset+legWidth*0.2, kneeY, torsoX+4*scale, shoeTop);
+  ctx2.lineTo(torsoX+12*scale, shoeTop);
+  ctx2.quadraticCurveTo(torsoX+legInset+legWidth*0.8, kneeY-2*scale, centerX-crotchWidth/2, hipY+2*scale);
+  ctx2.lineTo(centerX-crotchWidth/2, hipY);
+  ctx2.closePath();
+  ctx2.fill();
+
+  // Right leg panel
+  ctx2.beginPath();
+  ctx2.moveTo(centerX+crotchWidth/2, hipY);
+  ctx2.lineTo(centerX+crotchWidth/2, hipY+2*scale);
+  ctx2.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.8, kneeY-2*scale, torsoX+torsoWidth-4*scale, shoeTop);
+  ctx2.lineTo(torsoX+torsoWidth-4*scale, shoeTop);
+  ctx2.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.2, kneeY, torsoX+torsoWidth-legInset, hipY);
+  ctx2.closePath();
+  ctx2.fill();
+
+  if(colors.stroke){
+    ctx2.strokeStyle=colors.stroke;
+    ctx2.lineWidth=Math.max(1,1.05*scale);
+
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX+legInset, hipY);
+    ctx2.quadraticCurveTo(torsoX+legInset+legWidth*0.2, kneeY, torsoX+4*scale, shoeTop);
+    ctx2.lineTo(torsoX+12*scale, shoeTop);
+    ctx2.quadraticCurveTo(torsoX+legInset+legWidth*0.8, kneeY-2*scale, centerX-crotchWidth/2, hipY+2*scale);
+    ctx2.stroke();
+
+    ctx2.beginPath();
+    ctx2.moveTo(centerX+crotchWidth/2, hipY+2*scale);
+    ctx2.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.8, kneeY-2*scale, torsoX+torsoWidth-4*scale, shoeTop);
+    ctx2.lineTo(torsoX+torsoWidth-4*scale, shoeTop);
+    ctx2.quadraticCurveTo(torsoX+torsoWidth-legInset-legWidth*0.2, kneeY, torsoX+torsoWidth-legInset, hipY);
+    ctx2.stroke();
+  }
+
+  drawTrim();
+  ctx2.restore();
+}
+
+function drawAccessories(ctx2, palette, metrics, scale, equip={}, phase='front'){
+  const {torsoX, torsoY, torsoWidth, torsoHeight, shoeTop, shoeHeight, footBaseline, centerX, headCy, headRadius}=metrics;
+  if(phase==='back' && equip.cloak){
+    const colors=palette.cloak||{};
+    ctx2.save();
+    const grad=ctx2.createLinearGradient(centerX, torsoY, centerX, footBaseline);
+    grad.addColorStop(0, colors.highlight||colors.base||'#0f3460');
+    grad.addColorStop(0.7, colors.base||'#0f3460');
+    grad.addColorStop(1, colors.shadow||colors.edge||'#071f2a');
+    ctx2.fillStyle=grad;
+    const topY=torsoY+2*scale;
+    ctx2.beginPath();
+    ctx2.moveTo(torsoX-5*scale, topY);
+    ctx2.quadraticCurveTo(centerX-6*scale, headCy+headRadius*0.6, torsoX-4*scale, footBaseline-2*scale);
+    ctx2.quadraticCurveTo(centerX, footBaseline+6*scale, torsoX+torsoWidth+4*scale, footBaseline-2*scale);
+    ctx2.quadraticCurveTo(centerX+6*scale, headCy+headRadius*0.6, torsoX+torsoWidth+5*scale, topY);
+    ctx2.closePath();
+    ctx2.fill();
+    const edgeColor=colors.edge||colors.stroke;
+    if(edgeColor){
+      ctx2.strokeStyle=edgeColor;
+      ctx2.lineWidth=Math.max(1,1.4*scale);
+      ctx2.stroke();
+    }
+    if(colors.lining){
+      ctx2.strokeStyle=colors.lining;
+      ctx2.lineWidth=0.9*scale;
+      ctx2.beginPath();
+      ctx2.moveTo(torsoX-3*scale, topY+2*scale);
+      ctx2.quadraticCurveTo(centerX-5*scale, headCy+headRadius*0.7, torsoX-2*scale, footBaseline-3*scale);
+      ctx2.moveTo(torsoX+torsoWidth+3*scale, topY+2*scale);
+      ctx2.quadraticCurveTo(centerX+5*scale, headCy+headRadius*0.7, torsoX+torsoWidth+2*scale, footBaseline-3*scale);
+      ctx2.stroke();
+    }
+    ctx2.restore();
+    return;
+  }
+
+  if(phase!=='front') return;
+
+  const shoeColors=palette.shoes||{};
+  ctx2.save();
+  const shoeGrad=ctx2.createLinearGradient(centerX, shoeTop, centerX, shoeTop+shoeHeight);
+  shoeGrad.addColorStop(0, shoeColors.highlight||shoeColors.base||'#666');
+  shoeGrad.addColorStop(0.6, shoeColors.base||'#444');
+  shoeGrad.addColorStop(1, shoeColors.shadow||shoeColors.trim||'#222');
+  ctx2.fillStyle=shoeGrad;
+  const leftToe=torsoX+3*scale;
+  const rightToe=torsoX+torsoWidth+5*scale;
+  ctx2.beginPath();
+  ctx2.moveTo(leftToe, shoeTop);
+  ctx2.quadraticCurveTo(leftToe-2*scale, shoeTop+shoeHeight*0.7, leftToe+2*scale, shoeTop+shoeHeight);
+  ctx2.lineTo(rightToe-2*scale, shoeTop+shoeHeight);
+  ctx2.quadraticCurveTo(rightToe+2*scale, shoeTop+shoeHeight*0.7, rightToe-2*scale, shoeTop);
+  ctx2.closePath();
+  ctx2.fill();
+  if(shoeColors.stroke){
+    ctx2.strokeStyle=shoeColors.stroke;
+    ctx2.lineWidth=Math.max(1,1.2*scale);
+    ctx2.stroke();
+  }
+  if(shoeColors.trim){
+    ctx2.strokeStyle=shoeColors.trim;
+    ctx2.lineWidth=0.8*scale;
+    ctx2.beginPath();
+    ctx2.moveTo(leftToe+4*scale, shoeTop+shoeHeight*0.35);
+    ctx2.quadraticCurveTo(centerX, shoeTop+shoeHeight*0.15, rightToe-6*scale, shoeTop+shoeHeight*0.35);
+    ctx2.stroke();
+  }
+  ctx2.restore();
+
+  if(!equip.accessory) return;
+
+  const accColors=palette.accessory||{};
+  const baseColor=accColors.base||'#f8b500';
+  const highlight=accColors.highlight||baseColor;
+  const shadow=accColors.shadow||accColors.stroke||baseColor;
+  const chainColor=accColors.chain||highlight;
+  const medallionRadius=3.4*scale;
+  const chainTop=torsoY+2.5*scale;
+  const chainBottom=torsoY+6.5*scale;
+  ctx2.save();
+  ctx2.strokeStyle=chainColor;
+  ctx2.lineWidth=Math.max(0.9*scale,0.7);
+  ctx2.beginPath();
+  ctx2.moveTo(centerX-6*scale, chainTop);
+  ctx2.quadraticCurveTo(centerX, chainBottom-2*scale, centerX+6*scale, chainTop);
+  ctx2.stroke();
+
+  const radial=ctx2.createRadialGradient(centerX, chainBottom, medallionRadius*0.2, centerX, chainBottom, medallionRadius);
+  radial.addColorStop(0, highlight);
+  radial.addColorStop(0.7, baseColor);
+  radial.addColorStop(1, shadow);
+  ctx2.fillStyle=radial;
+  ctx2.beginPath();
+  ctx2.arc(centerX, chainBottom, medallionRadius, 0, Math.PI*2);
+  ctx2.fill();
+
+  if(accColors.stroke){
+    ctx2.strokeStyle=accColors.stroke;
+    ctx2.lineWidth=Math.max(0.9*scale,0.6);
+    ctx2.stroke();
+  }
+  ctx2.restore();
+}
+
 function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   if(!hasAvatarHelpers) return;
   const app = hydrateAppearance(p.appearance);
   const genderKey = p.gender || (p.name===username ? (mePos.gender || myGender) : null) || myGender || 'other';
   const outfit = GENDER_OUTFITS[genderKey] || GENDER_OUTFITS.other;
+  const equip = p.equip || {};
+  const basePalette=(outfit && outfit.palette) || (GENDER_OUTFITS.other && GENDER_OUTFITS.other.palette) || {};
+  const outfitPalette=mergeOutfitPalette(basePalette, equip);
   const skin = app.skin;
   const hair = app.hair;
   const eyes = app.eyes;
@@ -347,14 +851,12 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
 
   const bx=p.x-18*scale, by=p.y-24*scale;
   const shoeTop = by + 40*scale;
-  const shoeHeight = (p.equip && p.equip.shoes) ? 6*scale : 5*scale;
+  const shoeHeight = equip.shoes ? 6*scale : 5*scale;
   const footBaseline = shoeTop + shoeHeight;
   const torsoX = bx+8*scale;
   const torsoY = by+20*scale;
   const torsoWidth = 20*scale;
   const torsoHeight = 28*scale;
-  const hasUpper = !!(p.equip && p.equip.upper);
-  const hasLower = !!(p.equip && p.equip.lower);
 
   drawShadowMini(ctx2, p.x, footBaseline, scale*0.9);
 
@@ -412,58 +914,28 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const headCx = p.x;
   const headCy = by + 10*scale;
   const headTop = headCy - headRadius;
+  const metrics={
+    torsoX,
+    torsoY,
+    torsoWidth,
+    torsoHeight,
+    hipY,
+    kneeY,
+    shoeTop,
+    shoeHeight,
+    footBaseline,
+    centerX:p.x,
+    headCx,
+    headCy,
+    headRadius
+  };
+
+  drawAccessories(ctx2, outfitPalette, metrics, scale, equip, 'back');
   drawHead(ctx2, headCx, headCy, headRadius, skin);
 
-  if(p.equip && p.equip.cloak){ ctx2.fillStyle="#0f3460"; ctx2.fillRect(bx+2*scale,by+12*scale,32*scale,36*scale); }
-
-  if(!hasUpper){
-    if(genderKey==='female'){
-      const grad=ctx2.createLinearGradient(torsoX, torsoY, torsoX, torsoY+torsoHeight);
-      grad.addColorStop(0, outfit.primary);
-      grad.addColorStop(1, outfit.secondary);
-      ctx2.fillStyle=grad;
-      ctx2.beginPath();
-      ctx2.moveTo(torsoX-2*scale, torsoY+4*scale);
-      ctx2.lineTo(torsoX+torsoWidth+2*scale, torsoY+4*scale);
-      ctx2.lineTo(torsoX+torsoWidth-5*scale, torsoY+torsoHeight-2*scale);
-      ctx2.lineTo(torsoX+5*scale, torsoY+torsoHeight-2*scale);
-      ctx2.closePath();
-      ctx2.fill();
-      ctx2.fillStyle=outfit.accent;
-      ctx2.fillRect(torsoX+2*scale, torsoY+torsoHeight*0.55, torsoWidth-4*scale, 2.6*scale);
-      ctx2.fillStyle=outfit.primary;
-      ctx2.beginPath();
-      ctx2.ellipse(torsoX-1*scale, torsoY+8*scale, 3*scale, 5*scale, 0, 0, Math.PI*2);
-      ctx2.ellipse(torsoX+torsoWidth+1*scale, torsoY+8*scale, 3*scale, 5*scale, 0, 0, Math.PI*2);
-      ctx2.fill();
-    }else{
-      ctx2.fillStyle=outfit.primary;
-      ctx2.fillRect(torsoX, torsoY+2*scale, torsoWidth, 13*scale);
-      ctx2.fillStyle=outfit.accent;
-      ctx2.fillRect(torsoX, torsoY+12*scale, torsoWidth, 2*scale);
-    }
-  }
-
-  if(!hasLower){
-    ctx2.fillStyle=outfit.secondary;
-    if(genderKey==='female'){
-      ctx2.fillRect(torsoX+4*scale, torsoY+torsoHeight-10*scale, torsoWidth-8*scale, 8*scale);
-    }else{
-      ctx2.fillRect(torsoX+1*scale, torsoY+14*scale, torsoWidth-2*scale, 12*scale);
-    }
-  }
-
-  if(p.equip && p.equip.lower){ ctx2.fillStyle="#2e4f79"; ctx2.fillRect(bx+4*scale,by+24*scale,28*scale,16*scale); }
-  if(p.equip && p.equip.upper){ ctx2.fillStyle="#3a6ea5"; ctx2.fillRect(bx+4*scale,by+18*scale,28*scale,16*scale); }
-
-  if(p.equip && p.equip.shoes){
-    ctx2.fillStyle="#263b57";
-    ctx2.fillRect(bx+4*scale,shoeTop,28*scale,shoeHeight);
-  }else{
-    const shoeColor = genderKey==='female' ? '#b373d6' : (genderKey==='other' ? '#326b86' : '#263b57');
-    ctx2.fillStyle=shoeColor;
-    ctx2.fillRect(bx+6*scale,shoeTop,24*scale,shoeHeight);
-  }
+  drawLowerOutfit(ctx2, outfitPalette, metrics, scale, {equip, gender:genderKey});
+  drawUpperOutfit(ctx2, outfitPalette, metrics, scale, {equip, gender:genderKey});
+  drawAccessories(ctx2, outfitPalette, metrics, scale, equip, 'front');
   const faceScale = headRadius / 36;
   const hairTop = headCy - (headRadius * 0.7);
   drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
@@ -473,7 +945,7 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
     const hatTop = headTop - 4*scale;
     ctx2.fillRect(headCx - headRadius, hatTop, headRadius * 2, 4*scale);
   }
-  if(p.equip && p.equip.accessory){ ctx2.fillStyle="#f8b500"; ctx2.beginPath(); ctx2.arc(p.x,by+26*scale,4*scale,0,Math.PI*2); ctx2.fill(); }
+  // Accessories handled in drawAccessories
 
   if(withName){
     const now=Date.now();
