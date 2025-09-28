@@ -653,6 +653,8 @@
     const headCx = centerX;
     const headCy = torsoY - headRadius - 1.2*scale;
     const headTop = headCy - headRadius;
+    const faceScale = headRadius / 36;
+    const hairTop = headCy - (headRadius * 0.82);
     const rawNeckTop = headCy + headRadius - Math.max(2.4*scale, headRadius*0.24);
     const neckBaseY = torsoY + 1.6*scale;
     const neckTopY = Math.min(rawNeckTop, neckBaseY - 0.8*scale);
@@ -888,13 +890,16 @@
     };
 
     drawAccessories(ctx, palette, metrics, scale, equip, 'back');
+    ctx.save();
+    drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'back');
+    ctx.restore();
     drawHead(ctx, headCx, headCy, headRadius, appearance.skin);
     drawLowerOutfit(ctx, palette, metrics, scale, {equip, gender:genderKey});
     drawUpperOutfit(ctx, palette, metrics, scale, {equip, gender:genderKey});
+    ctx.save();
+    drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'front');
+    ctx.restore();
     drawAccessories(ctx, palette, metrics, scale, equip, 'front');
-    const faceScale = headRadius / 36;
-    const hairTop = headCy - (headRadius * 0.82);
-    drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale);
     drawExpression(ctx, appearance.emotion, headCx, headCy, appearance.eyes, faceScale);
 
     if(equip.head){
