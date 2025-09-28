@@ -388,7 +388,13 @@ const AVATAR_CANVAS_PREVIEW={width:220,height:260};
 const AVATAR_BASELINE_MARGIN=12;
 const AVATAR_FONT_FAMILY='Inter,system-ui';
 const RENDER_MODE_KEY='cp_render_mode';
-const AVAILABLE_RENDER_MODES=['canvas','svg','vector'];
+const WEBGL_RENDERER=window.WebGLCharacterRenderer || null;
+const WEBGL_SUPPORTED=!!(WEBGL_RENDERER && (typeof WEBGL_RENDERER.isSupported==='function' ? WEBGL_RENDERER.isSupported() : typeof WEBGL_RENDERER.draw==='function'));
+const AVAILABLE_RENDER_MODES=(()=>{
+  const modes=['canvas','svg','vector'];
+  if(WEBGL_SUPPORTED){ modes.push('webgl'); }
+  return modes;
+})();
 const stagePlayers=new Map();
 const SVG_NS='http://www.w3.org/2000/svg';
 let previewCharacter=null;
@@ -487,9 +493,21 @@ function getStoredRenderMode(){
 let currentRenderMode=getStoredRenderMode();
 
 function setRenderMode(mode){
-  if(!AVAILABLE_RENDER_MODES.includes(mode)){ return; }
-  currentRenderMode=mode;
-  try{ localStorage.setItem(RENDER_MODE_KEY, mode); }catch{}
+  const requested=(mode||'').toLowerCase();
+  let nextMode=requested;
+  if(nextMode==='webgl' && !WEBGL_SUPPORTED){
+    nextMode='canvas';
+  }
+  if(!AVAILABLE_RENDER_MODES.includes(nextMode)){
+    updateRenderToggle();
+    return;
+  }
+  if(currentRenderMode===nextMode){
+    updateRenderToggle();
+    return;
+  }
+  currentRenderMode=nextMode;
+  try{ localStorage.setItem(RENDER_MODE_KEY, nextMode); }catch{}
   updateRenderToggle();
   drawStage();
   drawCharPreview();
@@ -501,8 +519,19 @@ function updateRenderToggle(){
   toggle.querySelectorAll('[data-mode]').forEach(btn=>{
     const mode=(btn.dataset.mode||'').toLowerCase();
     const isActive=mode===currentRenderMode;
-    btn.classList.toggle('active', isActive);
-    btn.setAttribute('aria-pressed', isActive?'true':'false');
+    const isAvailable=AVAILABLE_RENDER_MODES.includes(mode);
+    const isSupported=mode!=='webgl' || WEBGL_SUPPORTED;
+    const disabled=!isAvailable || !isSupported;
+    btn.classList.toggle('active', isActive && !disabled);
+    btn.setAttribute('aria-pressed', (isActive && !disabled)?'true':'false');
+    btn.setAttribute('aria-disabled', disabled?'true':'false');
+    if(disabled){
+      btn.setAttribute('disabled','disabled');
+      if(mode==='webgl'){ btn.title='WebGL недоступен в вашем браузере'; }
+    }else{
+      btn.removeAttribute('disabled');
+      if(mode==='webgl'){ btn.removeAttribute('title'); }
+    }
   });
 }
 
@@ -511,6 +540,7 @@ if(renderToggle){
   renderToggle.addEventListener('click',(ev)=>{
     const btn=ev.target.closest('[data-mode]');
     if(!btn) return;
+    if(btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled')==='true') return;
     const mode=(btn.dataset.mode||'').toLowerCase();
     setRenderMode(mode);
   });
@@ -553,6 +583,16 @@ function createAvatarSVGWrapper(width,height){
   return {wrapper, svg};
 }
 
+function createAvatarWebGLWrapper(width,height){
+  const wrapper=document.createElement('div');
+  wrapper.className='avatar-webgl-wrapper';
+  wrapper.hidden=true;
+  wrapper.style.width=`${width}px`;
+  wrapper.style.height=`${height}px`;
+  wrapper.setAttribute('aria-hidden','true');
+  return wrapper;
+}
+
 function createStagePlayerElement(name,{withName=true,showChat=true,preview=false,scale=AVATAR_STAGE_SCALE,canvasSize=AVATAR_CANVAS_STAGE}={}){
   const container=document.createElement('div');
   container.className='stage-player';
@@ -560,12 +600,15 @@ function createStagePlayerElement(name,{withName=true,showChat=true,preview=fals
   container.setAttribute('aria-label', name);
   const canvas=createAvatarCanvas(canvasSize.width, canvasSize.height);
   container.appendChild(canvas);
+  const webglWrapper=createAvatarWebGLWrapper(canvasSize.width, canvasSize.height);
+  container.appendChild(webglWrapper);
   const svgElements=createAvatarSVGWrapper(canvasSize.width, canvasSize.height);
   container.appendChild(svgElements.wrapper);
   return {
     container,
     canvas,
     ctx: canvas.getContext('2d'),
+    webglWrapper,
     svgWrapper: svgElements.wrapper,
     svgElement: svgElements.svg,
     scale,
@@ -575,7 +618,8 @@ function createStagePlayerElement(name,{withName=true,showChat=true,preview=fals
     canvasWidth:canvasSize.width,
     canvasHeight:canvasSize.height,
     pixelRatio:null,
-    renderMode:'canvas'
+    renderMode:'canvas',
+    webglState:null
   };
 }
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender,rig:{}},
@@ -710,30 +754,75 @@ async function applyCharacterToElement(entry, info, options={}){
       chatScale:options.chatScale,
       nameFontWeight:options.nameFontWeight
     };
-  let renderedWithSvg=false;
-  if(desiredMode==='svg' && svgRenderer && typeof svgRenderer.draw==='function'){
-    if(entry.svgWrapper){
-      entry.svgWrapper.hidden=false;
-      const svgResult=svgRenderer.draw(entry.svgWrapper, drawState, Object.assign({}, rendererOptions, {width:baseWidth,height:baseHeight}));
-      if(svgResult && svgResult.mode==='svg'){
-        renderedWithSvg=true;
-        entry.canvas.hidden=true;
-        entry.svgWrapper.removeAttribute('aria-hidden');
-        entry.renderMode='svg';
-      }else{
+    const webglRenderer=WEBGL_RENDERER;
+    const canUseWebGL=WEBGL_SUPPORTED && webglRenderer && typeof webglRenderer.draw==='function';
+    let renderedWithWebGL=false;
+    if(desiredMode==='webgl' && canUseWebGL && entry.webglWrapper){
+      entry.webglWrapper.hidden=false;
+      try{
+        const webglResult=webglRenderer.draw(entry.webglWrapper, drawState, Object.assign({}, rendererOptions, {
+          width:baseWidth,
+          height:baseHeight,
+          pixelRatio:ratio
+        }));
+        if(webglResult && webglResult.mode==='webgl'){
+          renderedWithWebGL=true;
+          entry.renderMode='webgl';
+          entry.webglWrapper.removeAttribute('aria-hidden');
+          entry.canvas.hidden=true;
+          if(entry.svgWrapper){
+            entry.svgWrapper.hidden=true;
+            entry.svgWrapper.setAttribute('aria-hidden','true');
+          }
+          entry.webglState=webglResult.record || webglResult.state || null;
+        }else{
+          entry.webglWrapper.hidden=true;
+          entry.webglWrapper.setAttribute('aria-hidden','true');
+          entry.webglState=null;
+        }
+      }catch(webglErr){
+        console.warn('[Location] webgl render failed, falling back to canvas', webglErr);
+        entry.webglWrapper.hidden=true;
+        entry.webglWrapper.setAttribute('aria-hidden','true');
+        entry.webglState=null;
+      }
+    }
+    if(renderedWithWebGL){
+      if(entry.svgWrapper){
         entry.svgWrapper.hidden=true;
         entry.svgWrapper.setAttribute('aria-hidden','true');
-        if(svgRenderer && typeof svgRenderer.preload==='function' && typeof svgRenderer.isReady==='function' && !svgRenderer.isReady() && !options.__svgRetry){
-          ensureSvgReady().then(()=>{
-            if(currentRenderMode==='svg'){
-              const retryOptions=Object.assign({}, rendererOptions, {renderMode:'svg', __svgRetry:true});
-              applyCharacterToElement(entry, info, retryOptions).catch(()=>{});
-            }
-          }).catch(()=>{});
+      }
+      return;
+    }
+    entry.webglState=null;
+    if(entry.webglWrapper){
+      entry.webglWrapper.hidden=true;
+      entry.webglWrapper.setAttribute('aria-hidden','true');
+    }
+    let renderedWithSvg=false;
+    if(desiredMode==='svg' && svgRenderer && typeof svgRenderer.draw==='function'){
+      if(entry.svgWrapper){
+        entry.svgWrapper.hidden=false;
+        const svgResult=svgRenderer.draw(entry.svgWrapper, drawState, Object.assign({}, rendererOptions, {width:baseWidth,height:baseHeight}));
+        if(svgResult && svgResult.mode==='svg'){
+          renderedWithSvg=true;
+          entry.canvas.hidden=true;
+          entry.svgWrapper.removeAttribute('aria-hidden');
+          entry.renderMode='svg';
+        }else{
+          entry.svgWrapper.hidden=true;
+          entry.svgWrapper.setAttribute('aria-hidden','true');
+          if(svgRenderer && typeof svgRenderer.preload==='function' && typeof svgRenderer.isReady==='function' && !svgRenderer.isReady() && !options.__svgRetry){
+            ensureSvgReady().then(()=>{
+              if(currentRenderMode==='svg'){
+                const retryOptions=Object.assign({}, rendererOptions, {renderMode:'svg', __svgRetry:true});
+                applyCharacterToElement(entry, info, retryOptions).catch(()=>{});
+              }
+            }).catch(()=>{});
+          }
         }
       }
     }
-  }
     if(!renderedWithSvg){
       if(entry.svgWrapper){
         entry.svgWrapper.hidden=true;
