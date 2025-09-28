@@ -40,8 +40,8 @@ STATE: Dict[str, Any] = {
 
 DEFAULT_INV = [
     {"id": 1001, "name": "Простая шляпа", "type": "head", "equipped": False},
-    {"id": 1002, "name": "Простая рубашка", "type": "upper", "equipped": True},
-    {"id": 1003, "name": "Простые штаны", "type": "lower", "equipped": True},
+    {"id": 1002, "name": "Простая рубашка", "type": "upper", "equipped": False},
+    {"id": 1003, "name": "Простые штаны", "type": "lower", "equipped": False},
     {"id": 1004, "name": "Простые ботинки", "type": "shoes", "equipped": False},
 ]
 
