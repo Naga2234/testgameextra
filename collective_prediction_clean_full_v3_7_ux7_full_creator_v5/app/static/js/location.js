@@ -162,7 +162,6 @@ const charModal=document.getElementById("char-modal");
 const shopModal=document.getElementById("shop-modal");
 const shopCategoriesPanel=document.getElementById("shop-categories");
 const emotionPanel=document.getElementById("emotion-panel");
-let emotionPanelLayoutRaf=null;
 
 const SHOP_FILTER_KEY='cp_shop_filter';
 const SHOP_CATEGORY_TYPES=['head','upper','lower','shoes','accessory'];
@@ -173,63 +172,10 @@ let currentShopFilter=(()=>{
   return 'all';
 })();
 
-function centerEmotionSelection(panel=emotionPanel){
-  if(!panel) return;
-  const selected=panel.querySelector('.emotion-btn[data-selected="1"]');
-  if(!selected) return;
-  const width=panel.clientWidth;
-  if(width<=0) return;
-  const maxScroll=Math.max(0, panel.scrollWidth-width);
-  const target=selected.offsetLeft - (width-selected.offsetWidth)/2;
-  const clamped=Math.max(0, Math.min(maxScroll, target));
-  panel.scrollLeft=clamped;
-}
-
-function updateEmotionScrollHints(panel=emotionPanel){
-  if(!panel) return;
-  const width=panel.clientWidth;
-  if(width<=0){
-    panel.dataset.scrollLeft='0';
-    panel.dataset.scrollRight='0';
-    return;
-  }
-  const maxScroll=Math.max(0, panel.scrollWidth-width);
-  if(maxScroll<=1){
-    panel.dataset.scrollLeft='0';
-    panel.dataset.scrollRight='0';
-    return;
-  }
-  panel.dataset.scrollLeft=panel.scrollLeft>1?'1':'0';
-  panel.dataset.scrollRight=panel.scrollLeft<maxScroll-1?'1':'0';
-}
-
-function scheduleEmotionPanelLayout(){
-  if(!emotionPanel) return;
-  if(emotionPanelLayoutRaf) cancelAnimationFrame(emotionPanelLayoutRaf);
-  emotionPanelLayoutRaf=requestAnimationFrame(()=>{
-    emotionPanelLayoutRaf=requestAnimationFrame(()=>{
-      emotionPanelLayoutRaf=null;
-      if(charModal?.hidden) return;
-      centerEmotionSelection();
-      updateEmotionScrollHints();
-    });
-  });
-}
-
-if(emotionPanel){
-  emotionPanel.addEventListener('scroll', ()=>updateEmotionScrollHints(), {passive:true});
-}
-
-window.addEventListener('resize', ()=>{
-  if(charModal?.hidden) return;
-  scheduleEmotionPanelLayout();
-});
-
 document.getElementById("btn-character").addEventListener("click", async ()=>{
   charModal.hidden=false;
   renderEmotionPanel();
   drawCharPreview();
-  scheduleEmotionPanelLayout();
   await initIncomeTimer();
 });
 document.getElementById("btn-shop").addEventListener("click", ()=>{ shopModal.hidden=false; loadShop(); });
@@ -571,33 +517,40 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
 }
 
 function renderEmotionPanel(){
-  const panel=emotionPanel;
-  if(!panel) return;
-  panel.innerHTML="";
-  panel.dataset.scrollLeft='0';
-  panel.dataset.scrollRight='0';
+  const select=emotionPanel;
+  if(!select) return;
   const current=(mePos.appearance&&mePos.appearance.emotion)||'smile';
+  select.innerHTML="";
   EMOTIONS.forEach(em=>{
-    const btn=document.createElement('button');
-    btn.type='button';
-    btn.className='emotion-btn';
-    btn.innerHTML=`<span class="emo-icon">${em.icon}</span><span>${em.label}</span>`;
-    btn.dataset.val=em.value;
-    btn.dataset.selected = em.value===current ? 1 : 0;
-    btn.addEventListener('click', async ()=>{
-      if(mePos.appearance?.emotion===em.value) return;
-      panel.querySelectorAll('.emotion-btn').forEach(b=>b.dataset.selected=0);
-      btn.dataset.selected=1;
-      mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: em.value}));
+    const option=document.createElement('option');
+    option.value=em.value;
+    option.textContent=`${em.icon} ${em.label}`;
+    select.appendChild(option);
+  });
+  select.value=current;
+  if(select.value!==current){
+    const fallback=EMOTIONS[0]?.value || 'smile';
+    select.value=fallback;
+    mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: select.value || 'smile'}));
+    myAppearance = Object.assign({}, mePos.appearance);
+    localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
+    drawStage();
+    drawCharPreview();
+    sendAppearance();
+    persistAppearance().catch(e=>console.warn(e));
+  }
+  if(select.dataset.bound!=="1"){
+    select.addEventListener('change', async ()=>{
+      const next=select.value || 'smile';
+      if(mePos.appearance?.emotion===next) return;
+      mePos.appearance = hydrateAppearance(Object.assign({}, mePos.appearance, {emotion: next}));
       myAppearance = Object.assign({}, mePos.appearance);
       localStorage.setItem('cp_appearance', JSON.stringify(myAppearance));
       drawStage(); drawCharPreview(); sendAppearance();
       try{ await persistAppearance(); }catch(e){ console.warn(e); }
-      scheduleEmotionPanelLayout();
     });
-    panel.appendChild(btn);
-  });
-  scheduleEmotionPanelLayout();
+    select.dataset.bound="1";
+  }
 }
 
 async function persistAppearance(){
