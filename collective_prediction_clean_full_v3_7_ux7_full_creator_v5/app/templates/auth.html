@@ -356,7 +356,10 @@ function redrawPreview(){
   const gender=genderValue();
   const outfit=GENDER_OUTFITS[gender]||GENDER_OUTFITS.other;
 
-  drawHead(pctx, cx, top-18, 36, state.skin);
+  const headRadius = 36;
+  const headCy = top - 18;
+  const previewFaceScale = headRadius / 36;
+  drawHead(pctx, cx, headCy, headRadius, state.skin);
 
   const bodyTop = top+12;
   const bodyHeight = gender==='female'?90:96;
@@ -407,8 +410,9 @@ function redrawPreview(){
     pctx.fillRect(cx-half, bodyTop+bodyHeight*0.62-6, bodyWidth, 6);
   }
 
-  drawExpression(pctx, state.emotion, cx, top-18, state.eyes, 1);
-  drawHair(pctx, state.style, state.hair, cx, top-42);
+  drawExpression(pctx, state.emotion, cx, headCy, state.eyes, previewFaceScale);
+  const hairTop = headCy - (headRadius * 0.7);
+  drawHair(pctx, state.style, state.hair, cx, hairTop, previewFaceScale);
 }
 makeSwatches('skin-sw', SKINS, 'skin');
 makeSwatches('eyes-sw', EYES, 'eyes');

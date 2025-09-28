@@ -428,7 +428,7 @@ function drawMiniOn(ctx2, p, scale=SCALE_SCENE, withName=true){
   const headTop = headCy - headRadius;
   drawHead(ctx2, headCx, headCy, headRadius, skin);
   const faceScale = headRadius / 36;
-  const hairTop = headCy - (headRadius * (2/3));
+  const hairTop = headCy - (headRadius * 0.7);
   drawHair(ctx2, style, hair, headCx, hairTop, faceScale);
   drawExpression(ctx2, emotion, headCx, headCy, eyes, faceScale);
   if(p.equip && p.equip.head){
