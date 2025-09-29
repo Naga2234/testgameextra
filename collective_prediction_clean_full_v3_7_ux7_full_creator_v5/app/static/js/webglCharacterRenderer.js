@@ -226,6 +226,18 @@
     mesh.material.needsUpdate=true;
   }
 
+  function tintPalette(palette, amount){
+    if(!palette) return palette;
+    const base=palette.base ? shade(palette.base, amount) : undefined;
+    const highlight=palette.highlight ? shade(palette.highlight, amount*0.5) : undefined;
+    const shadow=palette.shadow ? shade(palette.shadow, amount) : undefined;
+    return {
+      base: base || palette.base,
+      highlight: highlight || palette.highlight,
+      shadow: shadow || palette.shadow
+    };
+  }
+
   function updateShadow(record, footY, legWidth){
     if(!record.shadow) return;
     record.shadow.position.y=footY - legWidth*0.08;
@@ -290,6 +302,19 @@
     const torsoCenterY=footY + legHeight + torsoHeight/2;
     const headCenterY=torsoCenterY + torsoHeight/2 + headRadius*0.92;
 
+    const torsoTopY=torsoCenterY + torsoHeight/2;
+    const torsoBottomY=torsoCenterY - torsoHeight/2;
+    const shoulderTopY=torsoTopY - baseScale*6;
+    const wristY=torsoBottomY + baseScale*10;
+    const armSpan=shoulderTopY - wristY;
+    const upperArmHeight=armSpan*0.5;
+    const forearmHeight=armSpan*0.32;
+    const handHeight=Math.max(armSpan - upperArmHeight - forearmHeight, baseScale*10);
+    const armWidth=torsoWidth*0.32;
+    const forearmWidth=armWidth*0.94;
+    const handWidth=armWidth*1.05;
+    const shoulderOffsetX=torsoWidth/2 + armWidth*0.55;
+
     const outfits=global.CharacterRenderer && global.CharacterRenderer.outfits;
     const baseOutfit=outfits ? (outfits[gender] || outfits.other || {}) : {};
     const basePalette=baseOutfit.palette || {};
@@ -322,6 +347,48 @@
     head.scale.set(headRadius, headRadius, 1);
     head.renderOrder=4;
     applyPalette(head, skinPalette);
+
+    const leftUpperArm=ensureMesh(record, 'armLeftUpper', 'rect');
+    leftUpperArm.position.set(-shoulderOffsetX, shoulderTopY - upperArmHeight/2, 12);
+    leftUpperArm.scale.set(armWidth, upperArmHeight, 1);
+    leftUpperArm.renderOrder=3;
+    applyPalette(leftUpperArm, skinPalette);
+
+    const rightUpperArm=ensureMesh(record, 'armRightUpper', 'rect');
+    rightUpperArm.position.set(shoulderOffsetX, shoulderTopY - upperArmHeight/2, 12);
+    rightUpperArm.scale.set(armWidth, upperArmHeight, 1);
+    rightUpperArm.renderOrder=3;
+    applyPalette(rightUpperArm, skinPalette);
+
+    const leftForearm=ensureMesh(record, 'armLeftFore', 'rect');
+    const leftForearmCenterY=shoulderTopY - upperArmHeight - forearmHeight/2;
+    leftForearm.position.set(-shoulderOffsetX + baseScale*1.5, leftForearmCenterY, 13);
+    leftForearm.scale.set(forearmWidth, forearmHeight, 1);
+    leftForearm.renderOrder=3.5;
+    applyPalette(leftForearm, skinPalette);
+
+    const rightForearm=ensureMesh(record, 'armRightFore', 'rect');
+    const rightForearmCenterY=shoulderTopY - upperArmHeight - forearmHeight/2;
+    rightForearm.position.set(shoulderOffsetX - baseScale*1.5, rightForearmCenterY, 13);
+    rightForearm.scale.set(forearmWidth, forearmHeight, 1);
+    rightForearm.renderOrder=3.5;
+    applyPalette(rightForearm, skinPalette);
+
+    const handPalette=tintPalette(skinPalette, -0.08);
+
+    const leftHand=ensureMesh(record, 'armLeftHand', 'rect');
+    const leftHandCenterY=leftForearmCenterY - forearmHeight/2 - handHeight/2;
+    leftHand.position.set(-shoulderOffsetX + baseScale*1.2, leftHandCenterY, 14);
+    leftHand.scale.set(handWidth, handHeight, 1);
+    leftHand.renderOrder=4.5;
+    applyPalette(leftHand, handPalette);
+
+    const rightHand=ensureMesh(record, 'armRightHand', 'rect');
+    const rightHandCenterY=rightForearmCenterY - forearmHeight/2 - handHeight/2;
+    rightHand.position.set(shoulderOffsetX - baseScale*1.2, rightHandCenterY, 14);
+    rightHand.scale.set(handWidth, handHeight, 1);
+    rightHand.renderOrder=4.5;
+    applyPalette(rightHand, handPalette);
 
     const hairBack=ensureMesh(record, 'hairBack', 'rect');
     hairBack.position.set(0, headCenterY + headRadius*0.1, 15);
