@@ -1253,7 +1253,11 @@
     slots.forEach(slot=>{
       const slotPalette=(basePalette||{})[slot]||{};
       const {equipped, ...defaults}=slotPalette;
-      merged[slot]=Object.assign({}, defaults, (equip && equip[slot] && equipped)?equipped:{});
+      if(!equip || !equip[slot]){
+        merged[slot]={};
+        return;
+      }
+      merged[slot]=Object.assign({}, defaults, equipped||{});
     });
     return merged;
   }
