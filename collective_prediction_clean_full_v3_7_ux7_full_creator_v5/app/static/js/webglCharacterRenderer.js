@@ -75,6 +75,22 @@
     if(mesh.geometry){ mesh.geometry.dispose(); }
   }
 
+  function replaceGeometry(mesh, geometry){
+    if(!mesh || !geometry) return;
+    if(mesh.geometry){
+      mesh.geometry.dispose();
+    }
+    mesh.geometry=geometry;
+  }
+
+  function baseLowerSeamInset(hasEquip, unit){
+    return (hasEquip ? 1.1 : 0.7) * unit;
+  }
+
+  function normalizeGender(value){
+    return typeof value==='string'?value.trim().toLowerCase():'';
+  }
+
   function ensureRecord(container, width, height, pixelRatio){
     let record=records.get(container);
     if(!record){
@@ -194,11 +210,24 @@
   function resolveSlotPalette(palette, slot, fallbackHex){
     const raw=palette && palette[slot] ? palette[slot] : {};
     const base=parseColor(raw.base || fallbackHex || '#6b7aa1');
-    return {
+    const resolved={
       base,
       highlight: raw.highlight ? parseColor(raw.highlight) : shade(base, 0.22),
       shadow: raw.shadow ? parseColor(raw.shadow) : shade(base, -0.28)
     };
+    if(raw.trim){
+      resolved.trim=parseColor(raw.trim);
+    }
+    if(raw.edge){
+      resolved.edge=parseColor(raw.edge);
+    }
+    if(raw.detail){
+      resolved.detail=parseColor(raw.detail);
+    }
+    if(raw.accent){
+      resolved.accent=parseColor(raw.accent);
+    }
+    return resolved;
   }
 
   function resolveSkinPalette(hex){
@@ -330,17 +359,180 @@
     const skinPalette=resolveSkinPalette(appearance.skin);
     const hairPalette=resolveHairPalette(appearance.hair);
 
-    const legs=ensureMesh(record, 'legs', 'rect');
+    const hasUpperEquip=!!equip.upper;
+    const hasLowerEquip=!!equip.lower;
+    const normalizedGender=normalizeGender(gender);
+
+    const contourUnit=torsoWidth/20;
+    const torsoTopWorld=torsoCenterY + torsoHeight/2;
+    const torsoBottomWorld=torsoCenterY - torsoHeight/2;
+    const toTorsoLocalY=(value)=>value - torsoCenterY;
+
+    const neckBaseWorld=torsoTopWorld;
+    const shoulderWorld=torsoTopWorld - 4*contourUnit;
+    const chestWorld=torsoTopWorld - 8*contourUnit;
+    const waistWorld=torsoTopWorld - torsoHeight*0.55;
+    const hipWorld=torsoBottomWorld + 1.1*contourUnit;
+
+    const neckHalf=torsoWidth/2;
+    const shoulderHalf=neckHalf + 2*contourUnit;
+    const chestHalf=shoulderHalf - 0.8*contourUnit;
+    const waistHalf=chestHalf - 2.4*contourUnit;
+    const hipHalf=waistHalf + 1.4*contourUnit;
+
+    const collarDrop=(hasUpperEquip?0.45:0.2)*contourUnit;
+    const collarDip=(hasUpperEquip?1.8:1.1)*contourUnit;
+    const outerOffset=(hasUpperEquip?1.6:0.9)*contourUnit;
+    const hemSpread=(hasUpperEquip?1.8:1.2)*contourUnit;
+    const waistEase=(hasUpperEquip?0.6:(normalizedGender==='female'?0.4:0.1))*contourUnit;
+
+    const upperShape=new THREE.Shape();
+    upperShape.moveTo(-neckHalf - outerOffset*0.4, toTorsoLocalY(neckBaseWorld) - collarDrop);
+    upperShape.quadraticCurveTo(-neckHalf*0.6, toTorsoLocalY(neckBaseWorld) - collarDrop - collarDip, 0, toTorsoLocalY(neckBaseWorld) - collarDrop - collarDip*0.75);
+    upperShape.quadraticCurveTo(neckHalf*0.6, toTorsoLocalY(neckBaseWorld) - collarDrop - collarDip, neckHalf + outerOffset*0.4, toTorsoLocalY(neckBaseWorld) - collarDrop);
+    upperShape.quadraticCurveTo(shoulderHalf + outerOffset, toTorsoLocalY(shoulderWorld), chestHalf + outerOffset*0.5, toTorsoLocalY(chestWorld));
+    upperShape.quadraticCurveTo(waistHalf + waistEase, toTorsoLocalY(waistWorld) - 0.4*contourUnit, hipHalf + hemSpread, toTorsoLocalY(hipWorld));
+    upperShape.quadraticCurveTo(0, toTorsoLocalY(hipWorld) - 0.8*contourUnit, -(hipHalf + hemSpread), toTorsoLocalY(hipWorld));
+    upperShape.quadraticCurveTo(-(waistHalf + waistEase), toTorsoLocalY(waistWorld) - 0.4*contourUnit, -(chestHalf + outerOffset*0.5), toTorsoLocalY(chestWorld));
+    upperShape.quadraticCurveTo(-(shoulderHalf + outerOffset), toTorsoLocalY(shoulderWorld), -(neckHalf + outerOffset*0.4), toTorsoLocalY(neckBaseWorld) - collarDrop);
+    upperShape.closePath();
+
+    const torso=ensureMesh(record, 'torso', 'shape');
+    replaceGeometry(torso, new THREE.ShapeGeometry(upperShape, 48));
+    torso.position.set(0, torsoCenterY, 10);
+    torso.scale.set(1,1,1);
+    torso.renderOrder=2;
+    applyPalette(torso, torsoPalette);
+
+    const beltColor=torsoPalette.trim || torsoPalette.edge;
+    if(beltColor){
+      const beltHeight=Math.max(contourUnit, 1.6*contourUnit);
+      const beltYOffset=0.6*contourUnit;
+      const beltYWorld=waistWorld - beltYOffset;
+      const beltBottomWorld=beltYWorld - beltHeight;
+      const beltShape=new THREE.Shape();
+      beltShape.moveTo(-(waistHalf + 0.8*contourUnit), toTorsoLocalY(beltYWorld));
+      beltShape.quadraticCurveTo(0, toTorsoLocalY(beltYWorld) - 0.4*contourUnit, waistHalf + 0.8*contourUnit, toTorsoLocalY(beltYWorld));
+      beltShape.lineTo(waistHalf + 0.7*contourUnit, toTorsoLocalY(beltBottomWorld));
+      beltShape.quadraticCurveTo(0, toTorsoLocalY(beltBottomWorld) - 0.35*contourUnit, -(waistHalf + 0.7*contourUnit), toTorsoLocalY(beltBottomWorld));
+      beltShape.closePath();
+      const beltMesh=ensureMesh(record, 'torsoBelt', 'shape');
+      replaceGeometry(beltMesh, new THREE.ShapeGeometry(beltShape, 24));
+      beltMesh.position.set(0, torsoCenterY, 11);
+      beltMesh.scale.set(1,1,1);
+      beltMesh.renderOrder=2.4;
+      beltMesh.material.color.copy(beltColor);
+      setGradient(beltMesh.geometry, shade(beltColor, 0.18), shade(beltColor, -0.12));
+      beltMesh.material.needsUpdate=true;
+    }else{
+      removeMesh(record, 'torsoBelt');
+    }
+
+    if(torsoPalette.highlight && hasUpperEquip){
+      const seamOffset=0;
+      const highlightWidth=Math.max(0.6*contourUnit, 0.85*contourUnit);
+      const seamTop=toTorsoLocalY(neckBaseWorld) - collarDrop - collarDip*0.5;
+      const seamBottom=toTorsoLocalY(hipWorld + 0.3*contourUnit);
+      const halfHighlight=highlightWidth/2;
+      const highlightShape=new THREE.Shape();
+      highlightShape.moveTo(seamOffset - halfHighlight, seamTop);
+      highlightShape.lineTo(seamOffset + halfHighlight, seamTop);
+      highlightShape.lineTo(seamOffset + halfHighlight, seamBottom);
+      highlightShape.lineTo(seamOffset - halfHighlight, seamBottom);
+      highlightShape.closePath();
+      const highlightMesh=ensureMesh(record, 'torsoHighlight', 'shape');
+      replaceGeometry(highlightMesh, new THREE.ShapeGeometry(highlightShape, 4));
+      highlightMesh.position.set(0, torsoCenterY, 12);
+      highlightMesh.scale.set(1,1,1);
+      highlightMesh.renderOrder=2.6;
+      highlightMesh.material.color.copy(torsoPalette.highlight);
+      setGradient(highlightMesh.geometry, torsoPalette.highlight, torsoPalette.highlight);
+      highlightMesh.material.needsUpdate=true;
+    }else{
+      removeMesh(record, 'torsoHighlight');
+    }
+
+    const legUnit=contourUnit;
+    const hipTopWorld=hipWorld + 0.4*legUnit;
+    const kneeWorld=hipWorld - (hipWorld - (footY + shoeHeight))*0.55;
+    const hemWorld=(footY + shoeHeight) - 0.3*legUnit;
+    const toLegLocalY=(value)=>value - legCenterY;
+
+    const hipOuter=Math.min(hipHalf + (hasLowerEquip?1.3:0.8)*legUnit, legWidth/2 + 0.9*legUnit);
+    const hipInner=baseLowerSeamInset(hasLowerEquip, legUnit)*0.45;
+    const kneeOuter=Math.max(legWidth/2 - 1.2*legUnit, hipOuter - 2.2*legUnit);
+    const kneeInner=baseLowerSeamInset(hasLowerEquip, legUnit)*0.35;
+    const ankleOuter=Math.max(legWidth/2 - 1.4*legUnit, kneeOuter - 1.6*legUnit);
+    const ankleInner=baseLowerSeamInset(hasLowerEquip, legUnit)*0.18;
+    const hemInset=hasLowerEquip?0.4*legUnit:0.25*legUnit;
+    const seamRise=0.5*legUnit;
+
+    const lowerShape=new THREE.Shape();
+    lowerShape.moveTo(-(hipOuter), toLegLocalY(hipTopWorld));
+    lowerShape.quadraticCurveTo(-(kneeOuter), toLegLocalY(kneeWorld + 0.2*legUnit), -(ankleOuter), toLegLocalY(hemWorld));
+    lowerShape.lineTo(-(ankleInner + hemInset), toLegLocalY(hemWorld));
+    lowerShape.quadraticCurveTo(-kneeInner, toLegLocalY(kneeWorld), -hipInner, toLegLocalY(hipWorld - 0.2*legUnit));
+    lowerShape.quadraticCurveTo(0, toLegLocalY(hipWorld - seamRise), hipInner, toLegLocalY(hipWorld - 0.2*legUnit));
+    lowerShape.quadraticCurveTo(kneeInner, toLegLocalY(kneeWorld), ankleInner + hemInset, toLegLocalY(hemWorld));
+    lowerShape.lineTo(ankleOuter, toLegLocalY(hemWorld));
+    lowerShape.quadraticCurveTo(kneeOuter, toLegLocalY(kneeWorld + 0.2*legUnit), hipOuter, toLegLocalY(hipTopWorld));
+    lowerShape.quadraticCurveTo(0, toLegLocalY(hipTopWorld - 1.4*legUnit), -hipOuter, toLegLocalY(hipTopWorld));
+    lowerShape.closePath();
+
+    const legs=ensureMesh(record, 'legs', 'shape');
+    replaceGeometry(legs, new THREE.ShapeGeometry(lowerShape, 48));
     legs.position.set(0, legCenterY, 0);
-    legs.scale.set(legWidth, legHeight, 1);
+    legs.scale.set(1,1,1);
     legs.renderOrder=0;
     applyPalette(legs, legPalette);
 
-    const torso=ensureMesh(record, 'torso', 'rect');
-    torso.position.set(0, torsoCenterY, 10);
-    torso.scale.set(torsoWidth, torsoHeight, 1);
-    torso.renderOrder=2;
-    applyPalette(torso, torsoPalette);
+    const legSeamColor=legPalette.highlight || legPalette.trim;
+    if(legSeamColor){
+      const seamWidth=Math.max(0.5*legUnit, 0.8*legUnit);
+      const seamHalf=seamWidth/2;
+      const seamTop=toLegLocalY(hipWorld - 0.2*legUnit);
+      const seamBottom=toLegLocalY((footY + shoeHeight) - 0.8*legUnit);
+      const seamShape=new THREE.Shape();
+      seamShape.moveTo(-seamHalf, seamTop);
+      seamShape.lineTo(seamHalf, seamTop);
+      seamShape.lineTo(seamHalf, seamBottom);
+      seamShape.lineTo(-seamHalf, seamBottom);
+      seamShape.closePath();
+      const seamMesh=ensureMesh(record, 'legSeam', 'shape');
+      replaceGeometry(seamMesh, new THREE.ShapeGeometry(seamShape, 4));
+      seamMesh.position.set(0, legCenterY, 1);
+      seamMesh.scale.set(1,1,1);
+      seamMesh.renderOrder=0.6;
+      seamMesh.material.color.copy(legSeamColor);
+      setGradient(seamMesh.geometry, legSeamColor, shade(legSeamColor, -0.25));
+      seamMesh.material.needsUpdate=true;
+    }else{
+      removeMesh(record, 'legSeam');
+    }
+
+    const cuffColor=legPalette.trim || legPalette.edge;
+    if(cuffColor){
+      const cuffHeight=Math.max(0.8*legUnit, 1.3*legUnit);
+      const cuffTop=toLegLocalY((footY + shoeHeight) - 0.45*legUnit);
+      const cuffBottom=cuffTop - cuffHeight;
+      const cuffShape=new THREE.Shape();
+      const cuffWidth=legWidth/2 - 0.4*legUnit;
+      cuffShape.moveTo(-cuffWidth, cuffTop);
+      cuffShape.lineTo(cuffWidth, cuffTop);
+      cuffShape.lineTo(cuffWidth, cuffBottom);
+      cuffShape.lineTo(-cuffWidth, cuffBottom);
+      cuffShape.closePath();
+      const cuffMesh=ensureMesh(record, 'legCuff', 'shape');
+      replaceGeometry(cuffMesh, new THREE.ShapeGeometry(cuffShape, 4));
+      cuffMesh.position.set(0, legCenterY, 0.8);
+      cuffMesh.scale.set(1,1,1);
+      cuffMesh.renderOrder=0.4;
+      cuffMesh.material.color.copy(cuffColor);
+      setGradient(cuffMesh.geometry, shade(cuffColor, 0.14), shade(cuffColor, -0.16));
+      cuffMesh.material.needsUpdate=true;
+    }else{
+      removeMesh(record, 'legCuff');
+    }
 
     const head=ensureMesh(record, 'head', 'circle');
     head.position.set(0, headCenterY, 20);
