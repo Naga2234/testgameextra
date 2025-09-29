@@ -18,15 +18,42 @@
 </header>
 
 <main class="mur-layout vertical">
-  <section class="mur-stage">
-    <div class="stage-wrap">
-      <div id="stage" class="stage"></div>
-      <div class="overlay online" id="online-overlay"></div>
-      <div class="arrows">
-        <button id="go-left" class="arrow">◀</button>
-        <button id="go-right" class="arrow">▶</button>
+  <section class="mur-hero">
+    <div class="char-preview-stage hero-preview">
+      <div class="character-stage">
+        <div id="location-character" class="character other" data-style="short" data-emotion="smile">
+          <div class="character-shadow"></div>
+          <div class="character-inner">
+            <div class="character-head">
+              <div class="character-hair-back"></div>
+              <div class="character-face">
+                <div class="character-eyebrows">
+                  <span class="character-eyebrow left"></span>
+                  <span class="character-eyebrow right"></span>
+                </div>
+                <div class="character-eyes">
+                  <span class="character-eye left"></span>
+                  <span class="character-eye right"></span>
+                </div>
+                <div class="character-mouth"></div>
+              </div>
+              <div class="character-hair"></div>
+            </div>
+            <div class="character-body">
+              <div class="character-arm left"></div>
+              <div class="character-arm right"></div>
+              <div class="character-torso">
+                <div class="character-underwear"></div>
+              </div>
+              <div class="character-leg left"></div>
+              <div class="character-leg right"></div>
+            </div>
+          </div>
+        </div>
       </div>
+      <div id="location-bubble" class="character-bubble" hidden></div>
     </div>
+    <div class="hero-online" id="online-overlay"></div>
   </section>
 
   <section class="mur-chat wide">
@@ -48,7 +75,39 @@
     <div class="char-grid">
       <div class="char-preview">
         <div class="char-header">
-          <div id="char-preview" class="char-preview-stage character-stage"></div>
+          <div class="char-preview-stage">
+            <div class="character-stage">
+              <div id="char-preview-character" class="character other" data-style="short" data-emotion="smile">
+                <div class="character-shadow"></div>
+                <div class="character-inner">
+                  <div class="character-head">
+                    <div class="character-hair-back"></div>
+                    <div class="character-face">
+                      <div class="character-eyebrows">
+                        <span class="character-eyebrow left"></span>
+                        <span class="character-eyebrow right"></span>
+                      </div>
+                      <div class="character-eyes">
+                        <span class="character-eye left"></span>
+                        <span class="character-eye right"></span>
+                      </div>
+                      <div class="character-mouth"></div>
+                    </div>
+                    <div class="character-hair"></div>
+                  </div>
+                  <div class="character-body">
+                    <div class="character-arm left"></div>
+                    <div class="character-arm right"></div>
+                    <div class="character-torso">
+                      <div class="character-underwear"></div>
+                    </div>
+                    <div class="character-leg left"></div>
+                    <div class="character-leg right"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="emotion-control">
             <div class="hint-row">
               <span class="lbl">Эмоция</span>
@@ -103,10 +162,6 @@
   </div>
 </div>
 
-<script src="/static/js/avatar_drawing.js"></script>
-<script src="/static/js/outfitLayers.js"></script>
-<script src="/static/js/characterRenderer.js"></script>
-<script src="/static/js/svgCharacterRenderer.js"></script>
 <script src="/static/js/location.js"></script>
 </body>
 </html>
