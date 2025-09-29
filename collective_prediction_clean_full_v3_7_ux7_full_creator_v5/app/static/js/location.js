@@ -383,18 +383,10 @@ const stage=document.getElementById("stage");
 const charPreviewStage=document.getElementById("char-preview");
 const AVATAR_STAGE_SCALE=5.8;
 const AVATAR_PREVIEW_SCALE=6.2;
-const AVATAR_CANVAS_STAGE={width:220,height:260};
-const AVATAR_CANVAS_PREVIEW={width:220,height:260};
+const AVATAR_STAGE_SIZE={width:220,height:260};
+const AVATAR_PREVIEW_SIZE={width:220,height:260};
 const AVATAR_BASELINE_MARGIN=12;
 const AVATAR_FONT_FAMILY='Inter,system-ui';
-const RENDER_MODE_KEY='cp_render_mode';
-const WEBGL_RENDERER=window.WebGLCharacterRenderer || null;
-const WEBGL_SUPPORTED=!!(WEBGL_RENDERER && (typeof WEBGL_RENDERER.isSupported==='function' ? WEBGL_RENDERER.isSupported() : typeof WEBGL_RENDERER.draw==='function'));
-const AVAILABLE_RENDER_MODES=(()=>{
-  const modes=['canvas','svg','vector'];
-  if(WEBGL_SUPPORTED){ modes.push('webgl'); }
-  return modes;
-})();
 const stagePlayers=new Map();
 const SVG_NS='http://www.w3.org/2000/svg';
 let previewCharacter=null;
@@ -484,88 +476,11 @@ function ensureSvgReady(){
   return svgReadyPromise || Promise.resolve();
 }
 
-function getStoredRenderMode(){
-  const stored=(localStorage.getItem(RENDER_MODE_KEY)||'').toLowerCase();
-  if(AVAILABLE_RENDER_MODES.includes(stored)){ return stored; }
-  return 'canvas';
-}
-
-let currentRenderMode=getStoredRenderMode();
-
-function setRenderMode(mode){
-  const requested=(mode||'').toLowerCase();
-  let nextMode=requested;
-  if(nextMode==='webgl' && !WEBGL_SUPPORTED){
-    nextMode='canvas';
-  }
-  if(!AVAILABLE_RENDER_MODES.includes(nextMode)){
-    updateRenderToggle();
-    return;
-  }
-  if(currentRenderMode===nextMode){
-    updateRenderToggle();
-    return;
-  }
-  currentRenderMode=nextMode;
-  try{ localStorage.setItem(RENDER_MODE_KEY, nextMode); }catch{}
-  updateRenderToggle();
-  drawStage();
-  drawCharPreview();
-}
-
-function updateRenderToggle(){
-  const toggle=document.getElementById('render-toggle');
-  if(!toggle) return;
-  toggle.querySelectorAll('[data-mode]').forEach(btn=>{
-    const mode=(btn.dataset.mode||'').toLowerCase();
-    const isActive=mode===currentRenderMode;
-    const isAvailable=AVAILABLE_RENDER_MODES.includes(mode);
-    const isSupported=mode!=='webgl' || WEBGL_SUPPORTED;
-    const disabled=!isAvailable || !isSupported;
-    btn.classList.toggle('active', isActive && !disabled);
-    btn.setAttribute('aria-pressed', (isActive && !disabled)?'true':'false');
-    btn.setAttribute('aria-disabled', disabled?'true':'false');
-    if(disabled){
-      btn.setAttribute('disabled','disabled');
-      if(mode==='webgl'){ btn.title='WebGL недоступен в вашем браузере'; }
-    }else{
-      btn.removeAttribute('disabled');
-      if(mode==='webgl'){ btn.removeAttribute('title'); }
-    }
-  });
-}
-
-const renderToggle=document.getElementById('render-toggle');
-if(renderToggle){
-  renderToggle.addEventListener('click',(ev)=>{
-    const btn=ev.target.closest('[data-mode]');
-    if(!btn) return;
-    if(btn.hasAttribute('disabled') || btn.getAttribute('aria-disabled')==='true') return;
-    const mode=(btn.dataset.mode||'').toLowerCase();
-    setRenderMode(mode);
-  });
-  updateRenderToggle();
-}
-
-function createAvatarCanvas(width,height){
-  const canvas=document.createElement('canvas');
-  canvas.width=width;
-  canvas.height=height;
-  canvas.style.width=`${width}px`;
-  canvas.style.height=`${height}px`;
-  canvas.className='avatar-canvas';
-  canvas.setAttribute('role','presentation');
-  canvas.tabIndex=-1;
-  return canvas;
-}
-
 function createAvatarSVGWrapper(width,height){
   const wrapper=document.createElement('div');
   wrapper.className='avatar-svg-wrapper';
-  wrapper.hidden=true;
   wrapper.style.width=`${width}px`;
   wrapper.style.height=`${height}px`;
-  wrapper.setAttribute('aria-hidden','true');
   const svg=document.createElementNS(SVG_NS,'svg');
   svg.setAttribute('data-avatar-svg','1');
   svg.setAttribute('preserveAspectRatio','xMidYMid meet');
@@ -580,46 +495,26 @@ function createAvatarSVGWrapper(width,height){
   const name=document.createElement('div');
   name.className='avatar-name-label';
   wrapper.appendChild(name);
-  return {wrapper, svg};
+  return {wrapper, svg, chat, name};
 }
 
-function createAvatarWebGLWrapper(width,height){
-  const wrapper=document.createElement('div');
-  wrapper.className='avatar-webgl-wrapper';
-  wrapper.hidden=true;
-  wrapper.style.width=`${width}px`;
-  wrapper.style.height=`${height}px`;
-  wrapper.setAttribute('aria-hidden','true');
-  return wrapper;
-}
-
-function createStagePlayerElement(name,{withName=true,showChat=true,preview=false,scale=AVATAR_STAGE_SCALE,canvasSize=AVATAR_CANVAS_STAGE}={}){
+function createStagePlayerElement(name,{withName=true,showChat=true,preview=false,scale=AVATAR_STAGE_SCALE,size=AVATAR_STAGE_SIZE}={}){
   const container=document.createElement('div');
   container.className='stage-player';
   container.dataset.name=name;
   container.setAttribute('aria-label', name);
-  const canvas=createAvatarCanvas(canvasSize.width, canvasSize.height);
-  container.appendChild(canvas);
-  const webglWrapper=createAvatarWebGLWrapper(canvasSize.width, canvasSize.height);
-  container.appendChild(webglWrapper);
-  const svgElements=createAvatarSVGWrapper(canvasSize.width, canvasSize.height);
+  const svgElements=createAvatarSVGWrapper(size.width, size.height);
   container.appendChild(svgElements.wrapper);
   return {
     container,
-    canvas,
-    ctx: canvas.getContext('2d'),
-    webglWrapper,
     svgWrapper: svgElements.wrapper,
     svgElement: svgElements.svg,
     scale,
     preview,
     withName,
     showChat,
-    canvasWidth:canvasSize.width,
-    canvasHeight:canvasSize.height,
-    pixelRatio:null,
-    renderMode:'canvas',
-    webglState:null
+    canvasWidth:size.width,
+    canvasHeight:size.height
   };
 }
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender,rig:{}},
@@ -671,48 +566,16 @@ function getStageBounds(){
   };
 }
 async function applyCharacterToElement(entry, info, options={}){
-  if(!entry || !entry.ctx) return;
-  const renderer=window.CharacterRenderer;
+  if(!entry || !entry.svgWrapper) return;
   const svgRenderer=window.SVGCharacterRenderer;
-  if(!renderer || typeof renderer.draw!=='function') return;
+  if(!svgRenderer || typeof svgRenderer.draw!=='function') return;
   try{
-    if(typeof renderer.ensureRigLoaded==='function'){
-      try{
-        await renderer.ensureRigLoaded();
-      }catch(loadErr){
-        console.warn('[Location] rig load failed', loadErr);
-      }
-    }
-    if(typeof renderer.isReady==='function' && !renderer.isReady()){
-      if(typeof window.requestAnimationFrame==='function'){
-        window.requestAnimationFrame(()=>{
-          applyCharacterToElement(entry, info, options).catch(()=>{});
-        });
-      }
+    await ensureSvgReady();
+    if(typeof svgRenderer.isReady==='function' && !svgRenderer.isReady()){
       return;
     }
-    const canvas=entry.canvas;
-    const ctx=entry.ctx;
-    const baseWidth=entry.canvasWidth || canvas.width;
-    const baseHeight=entry.canvasHeight || canvas.height;
-    const desiredMode=(options.renderMode && AVAILABLE_RENDER_MODES.includes(options.renderMode)) ? options.renderMode : currentRenderMode;
-    const ratio=Math.max(1, window.devicePixelRatio || 1);
-    const ensureCanvasDimensions=()=>{
-      if(entry.pixelRatio!==ratio){
-        canvas.width=Math.round(baseWidth*ratio);
-        canvas.height=Math.round(baseHeight*ratio);
-        canvas.style.width=`${baseWidth}px`;
-        canvas.style.height=`${baseHeight}px`;
-        entry.pixelRatio=ratio;
-      }
-      if(typeof ctx.resetTransform==='function'){
-        ctx.resetTransform();
-      }else if(typeof ctx.setTransform==='function'){
-        ctx.setTransform(1,0,0,1,0,0);
-      }
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      if(ratio!==1){ ctx.scale(ratio, ratio); }
-    };
+    const baseWidth=entry.canvasWidth || entry.svgWrapper.clientWidth || AVATAR_STAGE_SIZE.width;
+    const baseHeight=entry.canvasHeight || entry.svgWrapper.clientHeight || AVATAR_STAGE_SIZE.height;
     const drawScale = options.scale!=null?options.scale:(entry.scale!=null?entry.scale:AVATAR_STAGE_SCALE);
     const showChat = options.showChat!=null?options.showChat:(entry.showChat!==undefined?entry.showChat:true);
     const withName = options.withName!=null?options.withName:(entry.withName!==undefined?entry.withName:true);
@@ -752,101 +615,12 @@ async function applyCharacterToElement(entry, info, options={}){
       nameFontPx:options.nameFontPx,
       chatFontPx:options.chatFontPx,
       chatScale:options.chatScale,
-      nameFontWeight:options.nameFontWeight
+      nameFontWeight:options.nameFontWeight,
+      width:baseWidth,
+      height:baseHeight,
+      gender
     };
-    const webglRenderer=WEBGL_RENDERER;
-    const canUseWebGL=WEBGL_SUPPORTED && webglRenderer && typeof webglRenderer.draw==='function';
-    let renderedWithWebGL=false;
-    if(desiredMode==='webgl' && canUseWebGL && entry.webglWrapper){
-      entry.webglWrapper.hidden=false;
-      try{
-        const webglResult=webglRenderer.draw(entry.webglWrapper, drawState, Object.assign({}, rendererOptions, {
-          width:baseWidth,
-          height:baseHeight,
-          pixelRatio:ratio
-        }));
-        if(webglResult && webglResult.mode==='webgl'){
-          renderedWithWebGL=true;
-          entry.renderMode='webgl';
-          entry.webglWrapper.removeAttribute('aria-hidden');
-          entry.canvas.hidden=true;
-          if(entry.svgWrapper){
-            entry.svgWrapper.hidden=true;
-            entry.svgWrapper.setAttribute('aria-hidden','true');
-          }
-          entry.webglState=webglResult.record || webglResult.state || null;
-        }else{
-          entry.webglWrapper.hidden=true;
-          entry.webglWrapper.setAttribute('aria-hidden','true');
-          entry.webglState=null;
-        }
-      }catch(webglErr){
-        console.warn('[Location] webgl render failed, falling back to canvas', webglErr);
-        entry.webglWrapper.hidden=true;
-        entry.webglWrapper.setAttribute('aria-hidden','true');
-        entry.webglState=null;
-      }
-    }
-    if(renderedWithWebGL){
-      if(entry.svgWrapper){
-        entry.svgWrapper.hidden=true;
-        entry.svgWrapper.setAttribute('aria-hidden','true');
-      }
-      return;
-    }
-    entry.webglState=null;
-    if(entry.webglWrapper){
-      entry.webglWrapper.hidden=true;
-      entry.webglWrapper.setAttribute('aria-hidden','true');
-    }
-    let renderedWithSvg=false;
-    if(desiredMode==='svg' && svgRenderer && typeof svgRenderer.draw==='function'){
-      if(entry.svgWrapper){
-        entry.svgWrapper.hidden=false;
-        const svgResult=svgRenderer.draw(entry.svgWrapper, drawState, Object.assign({}, rendererOptions, {width:baseWidth,height:baseHeight}));
-        if(svgResult && svgResult.mode==='svg'){
-          renderedWithSvg=true;
-          entry.canvas.hidden=true;
-          entry.svgWrapper.removeAttribute('aria-hidden');
-          entry.renderMode='svg';
-        }else{
-          entry.svgWrapper.hidden=true;
-          entry.svgWrapper.setAttribute('aria-hidden','true');
-          if(svgRenderer && typeof svgRenderer.preload==='function' && typeof svgRenderer.isReady==='function' && !svgRenderer.isReady() && !options.__svgRetry){
-            ensureSvgReady().then(()=>{
-              if(currentRenderMode==='svg'){
-                const retryOptions=Object.assign({}, rendererOptions, {renderMode:'svg', __svgRetry:true});
-                applyCharacterToElement(entry, info, retryOptions).catch(()=>{});
-              }
-            }).catch(()=>{});
-          }
-        }
-      }
-    }
-    if(!renderedWithSvg){
-      if(entry.svgWrapper){
-        entry.svgWrapper.hidden=true;
-        entry.svgWrapper.setAttribute('aria-hidden','true');
-      }
-      entry.canvas.hidden=false;
-      ensureCanvasDimensions();
-      let renderedWithVector=false;
-      if(desiredMode==='vector' && typeof renderer.drawVector==='function'){
-        try{
-          const vectorResult=await renderer.drawVector(canvas, drawState, rendererOptions);
-          if(vectorResult!==null){
-            renderedWithVector=true;
-            entry.renderMode='vector';
-          }
-        }catch(err){
-          console.warn('[Location] vector render failed, falling back to canvas', err);
-        }
-      }
-      if(!renderedWithVector){
-        renderer.draw(ctx, drawState, rendererOptions);
-        entry.renderMode='canvas';
-      }
-    }
+    svgRenderer.draw(entry.svgWrapper, drawState, rendererOptions);
   }catch(err){
     console.error('[Location] failed to render character', err);
   }
@@ -855,7 +629,7 @@ function updateStagePlayer(player, isMe){
   if(!stage || !player || !player.name) return;
   let entry=stagePlayers.get(player.name);
   if(!entry){
-    entry=createStagePlayerElement(player.name,{withName:true,showChat:true,scale:AVATAR_STAGE_SCALE,canvasSize:AVATAR_CANVAS_STAGE});
+    entry=createStagePlayerElement(player.name,{withName:true,showChat:true,scale:AVATAR_STAGE_SCALE,size:AVATAR_STAGE_SIZE});
     stage.appendChild(entry.container);
     stagePlayers.set(player.name, entry);
   }
@@ -924,7 +698,7 @@ function drawCharPreview(){
       showChat:false,
       preview:true,
       scale:AVATAR_PREVIEW_SCALE,
-      canvasSize:AVATAR_CANVAS_PREVIEW
+      size:AVATAR_PREVIEW_SIZE
     });
     previewCharacter.container.classList.add('me');
     charPreviewStage.appendChild(previewCharacter.container);
