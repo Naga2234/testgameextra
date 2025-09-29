@@ -380,6 +380,71 @@ let mePos={name:username,x:DEFAULT_POSITION_X,y:DEFAULT_POSITION_Y,equip:{},appe
 const locationCharacterEl=document.getElementById('location-character');
 const charPreviewCharacterEl=document.getElementById('char-preview-character');
 const locationBubbleEl=document.getElementById('location-bubble');
+const characterStageEl=locationCharacterEl?locationCharacterEl.closest('.character-stage'):null;
+
+const remotePlayers=new Map();
+
+function applyEquipmentToElement(el, equip){
+  if(!el) return;
+  const normalizedEquip=equip||{};
+  SLOT_KEYS.forEach(slot=>{
+    const key='equip'+slot.charAt(0).toUpperCase()+slot.slice(1);
+    if(normalizedEquip[slot]){
+      el.dataset[key]=normalizedEquip[slot];
+    }else{
+      delete el.dataset[key];
+    }
+  });
+}
+
+function ensureRemotePlayer(name, data){
+  if(!name||name===mePos.name||!locationCharacterEl||!characterStageEl) return null;
+  let entry=remotePlayers.get(name);
+  if(!entry){
+    const clone=locationCharacterEl.cloneNode(true);
+    clone.removeAttribute('id');
+    clone.dataset.remoteName=name;
+    clone.classList.add('remote-character');
+    const bubble=clone.querySelector('.character-bubble');
+    if(bubble) bubble.remove();
+    const nameTag=clone.querySelector('.character-name-tag');
+    if(nameTag){
+      if(nameTag.id) nameTag.removeAttribute('id');
+      nameTag.textContent=name;
+    }
+    characterStageEl.appendChild(clone);
+    entry={el:clone,data:{}};
+    remotePlayers.set(name,entry);
+  }
+  const mergedData=Object.assign({},entry.data||{},data||{}, {name});
+  entry.data=mergedData;
+  const {el}=entry;
+  if(!el) return null;
+  const nameTag=el.querySelector('.character-name-tag');
+  if(nameTag){
+    nameTag.textContent=name;
+  }
+  const posX=typeof mergedData.x==='number'?mergedData.x:DEFAULT_POSITION_X;
+  const offsetX=posX-DEFAULT_POSITION_X;
+  el.style.setProperty('--translate-x', `${offsetX}px`);
+  el.dataset.positionX=String(Math.round(posX));
+  if(typeof mergedData.y==='number'){
+    el.dataset.positionY=String(Math.round(mergedData.y));
+  }
+  applyEquipmentToElement(el, mergedData.equip||{});
+  applyAppearanceToElement(el, mergedData.appearance||{}, mergedData.gender);
+  return el;
+}
+
+function removeRemotePlayer(name){
+  const entry=remotePlayers.get(name);
+  if(!entry) return;
+  const {el}=entry;
+  if(el?.parentNode){
+    el.parentNode.removeChild(el);
+  }
+  remotePlayers.delete(name);
+}
 
 const moveLeftButton=document.querySelector('[data-action="move-left"]');
 const moveRightButton=document.querySelector('[data-action="move-right"]');
@@ -642,6 +707,29 @@ function connectWS(){
         renderLocationCharacter();
         drawCharPreview();
       }
+      if(Array.isArray(d.players)){
+        const seen=new Set();
+        d.players.forEach(player=>{
+          if(!player||player.name===mePos.name) return;
+          ensureRemotePlayer(player.name, player);
+          seen.add(player.name);
+        });
+        Array.from(remotePlayers.keys()).forEach(name=>{
+          if(!seen.has(name)){
+            removeRemotePlayer(name);
+          }
+        });
+      }
+    }
+    else if(d.type==="move"){
+      if(d.name===mePos.name){
+        if(typeof d.x==='number'){
+          mePos.x=d.x;
+          applyCharacterPosition();
+        }
+      }else{
+        ensureRemotePlayer(d.name, {x:d.x, y:d.y});
+      }
     }
     else if(d.type==="state" || d.type==="appearance"){
       if(d.name===mePos.name){
@@ -659,6 +747,11 @@ function connectWS(){
           localStorage.setItem('cp_gender', myGender);
           updateGenderBadge(myGender);
         }
+        if(d.equip){
+          mePos.equip=d.equip;
+        }
+      }else{
+        ensureRemotePlayer(d.name, d);
       }
     }
     else if(d.type==="coins"){
@@ -669,6 +762,18 @@ function connectWS(){
     else if(d.type==="system"){
       sys(d.text);
       loadOnline();
+      if(typeof d.text==='string'){
+        const match=d.text.match(/^(.+?)\s+(?:вышел|покинул|отключился)/i);
+        if(match){
+          const nameLeft=match[1].trim();
+          if(nameLeft){
+            removeRemotePlayer(nameLeft);
+          }
+        }
+      }
+    }
+    else if(d.type==="leave" && d.name){
+      removeRemotePlayer(d.name);
     }
   }catch(e){ console.error(e); } };
 }
