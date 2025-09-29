@@ -91,6 +91,11 @@
     return typeof value==='string'?value.trim().toLowerCase():'';
   }
 
+  function applyCachedOverlays(record){
+    if(!record || !record.lastCharacter || !record.lastOptions) return;
+    updateOverlays(record, record.lastCharacter, record.lastOptions);
+  }
+
   function ensureRecord(container, width, height, pixelRatio){
     let record=records.get(container);
     if(!record){
@@ -143,7 +148,59 @@
       name.className='avatar-name-label';
       container.appendChild(name);
 
-      record={container, renderer, scene, camera, root, shadow, parts:new Map(), width, height, pixelRatio, chat, name};
+      record={
+        container,
+        renderer,
+        scene,
+        camera,
+        root,
+        shadow,
+        parts:new Map(),
+        width,
+        height,
+        pixelRatio,
+        chat,
+        name,
+        nameVisible:false,
+        nameHover:false,
+        nameClickTimer:null
+      };
+
+      record.pointerEnterHandler=()=>{
+        record.nameHover=true;
+        record.nameVisible=true;
+        if(record.nameClickTimer){
+          clearTimeout(record.nameClickTimer);
+          record.nameClickTimer=null;
+        }
+        applyCachedOverlays(record);
+      };
+      record.pointerLeaveHandler=()=>{
+        record.nameHover=false;
+        record.nameVisible=false;
+        if(record.nameClickTimer){
+          clearTimeout(record.nameClickTimer);
+          record.nameClickTimer=null;
+        }
+        applyCachedOverlays(record);
+      };
+      record.clickHandler=()=>{
+        record.nameVisible=true;
+        applyCachedOverlays(record);
+        if(record.nameClickTimer){
+          clearTimeout(record.nameClickTimer);
+        }
+        record.nameClickTimer=setTimeout(()=>{
+          record.nameClickTimer=null;
+          if(record.nameHover) return;
+          record.nameVisible=false;
+          applyCachedOverlays(record);
+        }, 1600);
+      };
+
+      container.addEventListener('pointerenter', record.pointerEnterHandler);
+      container.addEventListener('pointerleave', record.pointerLeaveHandler);
+      container.addEventListener('click', record.clickHandler);
       records.set(container, record);
     }else{
       if(pixelRatio!==record.pixelRatio){
@@ -277,12 +334,14 @@
     const withName=options.withName!==false && !!character.name;
     if(withName){
       record.name.textContent=character.name;
-      record.name.style.display='block';
       record.name.style.color=options.nameColor || '#111827';
       record.name.style.fontWeight=options.nameFontWeight || '600';
-      record.name.style.fontSize=options.nameFontPx?`${options.nameFontPx}px`:'';
+      const fontSize=options.nameFontPx || 12;
+      record.name.style.fontSize=`${fontSize}px`;
       record.name.style.fontFamily=options.nameFontFamily || options.fontFamily || '';
+      record.name.style.display=record.nameVisible?'block':'none';
     }else{
+      record.nameVisible=false;
       record.name.style.display='none';
     }
     const chatState=(options.showChat!==false && character.chat && character.chat.text)?character.chat:null;
@@ -631,6 +690,8 @@
     const pixelRatio=Number.isFinite(options.pixelRatio)?options.pixelRatio:(global.devicePixelRatio||1);
     const record=ensureRecord(container, width, height, pixelRatio);
     if(!record) return null;
+    record.lastCharacter=character;
+    record.lastOptions=options;
     updateCharacter(record, character, options);
     updateOverlays(record, character, options);
     record.renderer.render(record.scene, record.camera);
@@ -640,6 +701,19 @@
   function dispose(container){
     const record=records.get(container);
     if(!record) return;
+    if(record.nameClickTimer){
+      clearTimeout(record.nameClickTimer);
+      record.nameClickTimer=null;
+    }
+    if(record.pointerEnterHandler){
+      container.removeEventListener('pointerenter', record.pointerEnterHandler);
+    }
+    if(record.pointerLeaveHandler){
+      container.removeEventListener('pointerleave', record.pointerLeaveHandler);
+    }
+    if(record.clickHandler){
+      container.removeEventListener('click', record.clickHandler);
+    }
     record.parts.forEach(mesh=>disposeMesh(mesh));
     record.parts.clear();
     if(record.shadow){
