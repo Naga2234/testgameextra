@@ -34,7 +34,7 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 
 @media (max-width:640px){.char-preview-stage.hero-preview{padding-top:140px;padding-right:160px}.hero-preview .hero-online{top:16px;right:16px;width:min(180px,calc(100% - 32px))}.hero-preview .character-bubble{top:164px}}
 
-#location-character{--translate-x:0px;transform:translate3d(var(--translate-x),0,0) translateX(-50%)}
+#location-character{--translate-x:0px;--scale:.75;transform-origin:50% 100%;transform:translate3d(var(--translate-x),0,0) translateX(-50%) scale(var(--scale))}
 
 .mur-chat.wide{width:100%}
 .mur-chat h3{margin:6px 0 10px}
