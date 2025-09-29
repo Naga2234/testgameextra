@@ -369,11 +369,151 @@ async function persistAppearance(){
   await fetch('/api/appearance/save',{method:'POST', body:f});
 }
 
-let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender};
+const DEFAULT_POSITION_X=520;
+const DEFAULT_POSITION_Y=340;
+const MOVE_STEP=40;
+
+let mePos={name:username,x:DEFAULT_POSITION_X,y:DEFAULT_POSITION_Y,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender};
 
 const locationCharacterEl=document.getElementById('location-character');
 const charPreviewCharacterEl=document.getElementById('char-preview-character');
 const locationBubbleEl=document.getElementById('location-bubble');
+
+const moveLeftButton=document.querySelector('[data-action="move-left"]');
+const moveRightButton=document.querySelector('[data-action="move-right"]');
+
+function getCurrentCharacterX(){
+  return typeof mePos.x==='number'?mePos.x:DEFAULT_POSITION_X;
+}
+
+function getStageMetrics(){
+  if(!locationCharacterEl) return null;
+  const stage=locationCharacterEl.closest('.character-stage');
+  if(!stage) return null;
+  const stageWidth=stage.clientWidth||stage.offsetWidth||0;
+  const charWidth=locationCharacterEl.offsetWidth||0;
+  if(stageWidth<=0||charWidth<=0){
+    const fallbackRange=240;
+    return {minX:DEFAULT_POSITION_X-fallbackRange,maxX:DEFAULT_POSITION_X+fallbackRange};
+  }
+  const halfRange=Math.max(0,(stageWidth-charWidth)/2);
+  return {minX:DEFAULT_POSITION_X-halfRange,maxX:DEFAULT_POSITION_X+halfRange};
+}
+
+function applyCharacterPosition(){
+  if(!locationCharacterEl) return;
+  const currentX=getCurrentCharacterX();
+  const offsetX=currentX-DEFAULT_POSITION_X;
+  locationCharacterEl.style.setProperty('--translate-x', `${offsetX}px`);
+  locationCharacterEl.dataset.positionX=String(Math.round(currentX));
+}
+
+function updateMovementButtons(metrics){
+  const bounds=metrics===undefined?getStageMetrics():metrics;
+  const hasStage=!!(bounds && locationCharacterEl);
+  [moveLeftButton,moveRightButton].forEach(btn=>{
+    if(!btn) return;
+    if(!hasStage){
+      btn.hidden=true;
+      btn.disabled=true;
+      return;
+    }
+    btn.hidden=false;
+    btn.disabled=false;
+  });
+  if(!hasStage||!bounds) return;
+  const currentX=getCurrentCharacterX();
+  const tolerance=0.5;
+  if(moveLeftButton){
+    moveLeftButton.disabled=currentX<=bounds.minX+tolerance;
+  }
+  if(moveRightButton){
+    moveRightButton.disabled=currentX>=bounds.maxX-tolerance;
+  }
+}
+
+function moveCharacterBy(delta){
+  if(typeof delta!=='number'||!Number.isFinite(delta)){
+    return false;
+  }
+  const bounds=getStageMetrics();
+  if(!bounds){
+    updateMovementButtons(bounds);
+    return false;
+  }
+  const prevX=getCurrentCharacterX();
+  const nextX=Math.round(Math.min(bounds.maxX, Math.max(bounds.minX, prevX+delta)));
+  if(nextX===prevX){
+    updateMovementButtons(bounds);
+    return false;
+  }
+  mePos.x=nextX;
+  applyCharacterPosition();
+  updateMovementButtons(bounds);
+  return true;
+}
+
+function handleCharacterMovement(event){
+  if(!event||event.defaultPrevented) return;
+  if(event.metaKey||event.ctrlKey||event.altKey) return;
+  let delta=0;
+  if(event.key==='ArrowLeft'||event.key==='a'||event.key==='A'){
+    delta=-MOVE_STEP;
+  }else if(event.key==='ArrowRight'||event.key==='d'||event.key==='D'){
+    delta=MOVE_STEP;
+  }else{
+    return;
+  }
+  const active=document.activeElement;
+  if(active){
+    const tag=active.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||active.isContentEditable){
+      return;
+    }
+  }
+  event.preventDefault();
+  if(moveCharacterBy(delta)){
+    sendMove();
+  }
+}
+
+function bindMoveButton(btn, delta){
+  if(!btn) return;
+  btn.type='button';
+  let pointerTriggered=false;
+  const trigger=()=>{
+    if(moveCharacterBy(delta)){
+      sendMove();
+    }
+  };
+  btn.addEventListener('click',()=>{
+    if(pointerTriggered){
+      pointerTriggered=false;
+      return;
+    }
+    trigger();
+  });
+  if(window.PointerEvent){
+    btn.addEventListener('pointerdown',event=>{
+      if(typeof event.button==='number' && event.button!==0) return;
+      pointerTriggered=true;
+      trigger();
+    });
+    btn.addEventListener('pointerup',()=>{
+      if(!pointerTriggered) return;
+      setTimeout(()=>{ pointerTriggered=false; },0);
+    });
+    btn.addEventListener('pointercancel',()=>{ pointerTriggered=false; });
+  }
+}
+
+bindMoveButton(moveLeftButton, -MOVE_STEP);
+bindMoveButton(moveRightButton, MOVE_STEP);
+window.addEventListener('keydown', handleCharacterMovement);
+window.addEventListener('resize', ()=>updateMovementButtons());
+
+applyCharacterPosition();
+updateMovementButtons();
 
 const CHAT_BUBBLE_DURATION = 4200;
 let bubbleTimeoutId=null;
@@ -435,6 +575,8 @@ function renderLocationCharacter(){
   if(normalized){
     mePos.appearance = Object.assign({}, normalized);
   }
+  applyCharacterPosition();
+  updateMovementButtons();
 }
 
 function drawCharPreview(){

@@ -20,36 +20,40 @@
 <main class="mur-layout vertical">
   <section class="mur-hero">
     <div class="char-preview-stage hero-preview">
-      <div class="character-stage">
-        <div id="location-character" class="character other" data-style="short" data-emotion="smile">
-          <div class="character-shadow"></div>
-          <div class="character-inner">
-            <div class="character-head">
-              <div class="character-hair-back"></div>
-              <div class="character-face">
-                <div class="character-eyebrows">
-                  <span class="character-eyebrow left"></span>
-                  <span class="character-eyebrow right"></span>
+      <div class="hero-preview-controls">
+        <button type="button" class="hero-move-button" data-action="move-left" aria-label="Передвинуть персонажа влево" title="Влево">◀</button>
+        <div class="character-stage">
+          <div id="location-character" class="character other" data-style="short" data-emotion="smile">
+            <div class="character-shadow"></div>
+            <div class="character-inner">
+              <div class="character-head">
+                <div class="character-hair-back"></div>
+                <div class="character-face">
+                  <div class="character-eyebrows">
+                    <span class="character-eyebrow left"></span>
+                    <span class="character-eyebrow right"></span>
+                  </div>
+                  <div class="character-eyes">
+                    <span class="character-eye left"></span>
+                    <span class="character-eye right"></span>
+                  </div>
+                  <div class="character-mouth"></div>
                 </div>
-                <div class="character-eyes">
-                  <span class="character-eye left"></span>
-                  <span class="character-eye right"></span>
+                <div class="character-hair"></div>
+              </div>
+              <div class="character-body">
+                <div class="character-arm left"></div>
+                <div class="character-arm right"></div>
+                <div class="character-torso">
+                  <div class="character-underwear"></div>
                 </div>
-                <div class="character-mouth"></div>
+                <div class="character-leg left"></div>
+                <div class="character-leg right"></div>
               </div>
-              <div class="character-hair"></div>
-            </div>
-            <div class="character-body">
-              <div class="character-arm left"></div>
-              <div class="character-arm right"></div>
-              <div class="character-torso">
-                <div class="character-underwear"></div>
-              </div>
-              <div class="character-leg left"></div>
-              <div class="character-leg right"></div>
             </div>
           </div>
         </div>
+        <button type="button" class="hero-move-button" data-action="move-right" aria-label="Передвинуть персонажа вправо" title="Вправо">▶</button>
       </div>
       <div id="location-bubble" class="character-bubble" hidden></div>
       <div class="hero-online" id="online-overlay"></div>
