@@ -111,7 +111,42 @@
     });
   }
 
-  function ensureElements(container, options){
+  const TAP_NAME_TIMEOUT = 2500;
+
+  function syncNameOverlay(record){
+    if(!record || !record.lastCharacter){ return; }
+    updateOverlays(record, record.lastCharacter, record.lastOptions || {}, true);
+  }
+
+  function refreshNameVisibility(record, options){
+    if(!record){ return; }
+    const opts = options || {};
+    if(record._nameTimeout){
+      clearTimeout(record._nameTimeout);
+      record._nameTimeout = null;
+    }
+    const nextVisible = Boolean(record.hoverActive || record.clickActive);
+    const changed = record.nameVisible !== nextVisible || opts.reapply;
+    record.nameVisible = nextVisible;
+    if(record.nameVisible && Number.isFinite(opts.timeout) && opts.timeout > 0){
+      record._nameTimeout = setTimeout(()=>{
+        record._nameTimeout = null;
+        if(record.clickActive){
+          record.clickActive = false;
+        }
+        const stillVisible = Boolean(record.hoverActive || record.clickActive);
+        if(record.nameVisible !== stillVisible){
+          record.nameVisible = stillVisible;
+        }
+        syncNameOverlay(record);
+      }, opts.timeout);
+    }
+    if(changed){
+      syncNameOverlay(record);
+    }
+  }
+
+  function ensureRecord(container, options){
     if(!container) return null;
     let record = container[INTERNAL_KEY];
     if(!record){
@@ -151,9 +186,53 @@
         layerRoot,
         chat,
         name,
-        id: `svgAvatar-${++state.idCounter}`
+        id: `svgAvatar-${++state.idCounter}`,
+        hoverActive: false,
+        clickActive: false,
+        nameVisible: false,
+        lastCharacter: null,
+        lastOptions: null,
+        _nameTimeout: null
       };
       container[INTERNAL_KEY] = record;
+    }
+    if(record && !record._pointerHandlers){
+      const onPointerEnter = ()=>{
+        record.hoverActive = true;
+        refreshNameVisibility(record, {reapply: true});
+      };
+      const onPointerLeave = ()=>{
+        record.hoverActive = false;
+        record.clickActive = false;
+        refreshNameVisibility(record, {reapply: true});
+      };
+      const onClick = ()=>{
+        if(record.hoverActive){ return; }
+        record.clickActive = !record.clickActive;
+        const baseOptions = record.lastOptions || {};
+        const rawTimeout = baseOptions.nameTapVisibleMs;
+        const parsedTimeout = typeof rawTimeout === 'string' || typeof rawTimeout === 'number'
+          ? Number(rawTimeout)
+          : NaN;
+        const hasCustomTimeout = rawTimeout != null && !Number.isNaN(parsedTimeout);
+        const configured = hasCustomTimeout ? parsedTimeout : TAP_NAME_TIMEOUT;
+        const timeout = record.clickActive ? Math.max(0, configured) : 0;
+        refreshNameVisibility(record, {reapply: true, timeout});
+      };
+      record._pointerHandlers = { onPointerEnter, onPointerLeave, onClick };
+      container.addEventListener('pointerenter', onPointerEnter);
+      container.addEventListener('pointerleave', onPointerLeave);
+      container.addEventListener('click', onClick);
+      record.cleanupPointerHandlers = ()=>{
+        container.removeEventListener('pointerenter', onPointerEnter);
+        container.removeEventListener('pointerleave', onPointerLeave);
+        container.removeEventListener('click', onClick);
+        if(record._nameTimeout){
+          clearTimeout(record._nameTimeout);
+          record._nameTimeout = null;
+        }
+        record._pointerHandlers = null;
+      };
     }
     if(options && Number.isFinite(options.width) && Number.isFinite(options.height)){
       const width = Math.max(1, Math.round(options.width));
@@ -314,32 +393,36 @@
     });
   }
 
-  function updateOverlays(record, character, options){
-    const withName = options?.withName !== false;
-    if(withName && character?.name){
-      record.name.textContent = character.name;
-      record.name.style.display = 'block';
-      record.name.style.fontFamily = options?.nameFontFamily || options?.fontFamily || 'Inter,system-ui';
-      const size = options?.nameFontPx != null ? options.nameFontPx : 16;
-      record.name.style.fontSize = `${size}px`;
-      record.name.style.fontWeight = options?.nameFontWeight || '600';
-      record.name.style.color = options?.nameColor || '#111827';
-    }else{
-      record.name.textContent = '';
-      record.name.style.display = 'none';
+  function updateOverlays(record, character, options, reapply){
+    if(!record){ return; }
+    if(reapply){
+      character = character || record.lastCharacter || {};
+      options = options || record.lastOptions || {};
     }
+    const opts = options || {};
+    const data = character || {};
+    const withName = opts.withName !== false;
+    const nameText = data?.name != null ? String(data.name) : '';
+    const showName = Boolean(withName && nameText && record.nameVisible);
+    record.name.textContent = nameText;
+    record.name.style.display = showName ? 'block' : 'none';
+    record.name.style.fontFamily = opts.nameFontFamily || opts.fontFamily || 'Inter,system-ui';
+    const size = opts.nameFontPx != null ? opts.nameFontPx : 12;
+    record.name.style.fontSize = `${size}px`;
+    record.name.style.fontWeight = opts.nameFontWeight || '600';
+    record.name.style.color = opts.nameColor || '#111827';
 
-    const showChat = options?.showChat !== false;
-    const chat = character?.chat;
+    const showChat = opts.showChat !== false;
+    const chat = data?.chat;
     const hasChat = showChat && chat && chat.text && (!chat.expiresAt || chat.expiresAt > Date.now());
     if(hasChat){
       record.chat.textContent = String(chat.text);
       record.chat.style.display = 'block';
-      record.chat.style.fontFamily = options?.chatFontFamily || options?.fontFamily || 'Inter,system-ui';
-      const chatSize = options?.chatFontPx != null ? options.chatFontPx : 14;
+      record.chat.style.fontFamily = opts.chatFontFamily || opts.fontFamily || 'Inter,system-ui';
+      const chatSize = opts.chatFontPx != null ? opts.chatFontPx : 14;
       record.chat.style.fontSize = `${chatSize}px`;
-      if(options?.chatMaxWidth){
-        record.chat.style.maxWidth = `${options.chatMaxWidth}px`;
+      if(opts.chatMaxWidth){
+        record.chat.style.maxWidth = `${opts.chatMaxWidth}px`;
       }else{
         record.chat.style.maxWidth = '180px';
       }
@@ -347,11 +430,14 @@
       record.chat.textContent = '';
       record.chat.style.display = 'none';
     }
+
+    record.lastCharacter = data;
+    record.lastOptions = opts;
   }
 
   function renderToContainer(container, character, options){
     if(!state.ready || !state.metadata){ return null; }
-    const record = ensureElements(container, options);
+    const record = ensureRecord(container, options);
     if(!record){ return null; }
     const appearance = normalizeAppearance(character || {});
     const equip = Object.assign({}, character?.equip || {});
