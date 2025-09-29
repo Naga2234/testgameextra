@@ -40,6 +40,72 @@
     return value.trim().toLowerCase();
   }
 
+  const UNDERWEAR_BASE = {
+    male: '#6aa2ff',
+    female: '#f472b6',
+    other: '#7c3aed'
+  };
+
+  function normalizeHexColor(value){
+    if(typeof value !== 'string') return null;
+    const match = value.trim().match(/^#?([a-f\d]{3}|[a-f\d]{6})$/i);
+    if(!match) return null;
+    let raw = match[1];
+    if(raw.length === 3){
+      raw = raw.split('').map(ch => ch + ch).join('');
+    }
+    return raw.toLowerCase();
+  }
+
+  function adjustHexColor(hex, amount){
+    const normalized = normalizeHexColor(hex);
+    if(!normalized || !Number.isFinite(amount)){
+      return hex;
+    }
+    const clamp = v => Math.max(0, Math.min(255, v));
+    const apply = channel => {
+      if(amount >= 0){
+        return clamp(Math.round(channel + (255 - channel) * amount));
+      }
+      return clamp(Math.round(channel + channel * amount));
+    };
+    let r = parseInt(normalized.slice(0, 2), 16);
+    let g = parseInt(normalized.slice(2, 4), 16);
+    let b = parseInt(normalized.slice(4, 6), 16);
+    r = apply(r);
+    g = apply(g);
+    b = apply(b);
+    const toHex = v => v.toString(16).padStart(2, '0');
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function getUnderwearColors(palette, gender, part){
+    const normalized = normalizeGender(gender) || 'other';
+    const baseColor = UNDERWEAR_BASE[normalized] || UNDERWEAR_BASE.other;
+    const fallback = {
+      base: baseColor,
+      highlight: adjustHexColor(baseColor, 0.25),
+      shadow: adjustHexColor(baseColor, -0.2),
+      trim: adjustHexColor(baseColor, -0.1)
+    };
+    if(!palette || typeof palette !== 'object'){
+      return fallback;
+    }
+    const sources = part === 'upper'
+      ? [palette.upperUnderwear, palette.upperUnder, palette.upper]
+      : [palette.lowerUnderwear, palette.lowerUnder, palette.lower];
+    for(let i = 0; i < sources.length; i += 1){
+      const source = sources[i];
+      if(source && typeof source === 'object'){
+        const {equipped, ...rest} = source;
+        if(Object.keys(rest).length){
+          return Object.assign({}, fallback, rest);
+        }
+      }
+    }
+    return fallback;
+  }
+
   function drawUpperLayer(shared){
     const {ctx, metrics, palette, scale, equip, gender, options} = shared;
     if(!ctx) return;
@@ -144,10 +210,10 @@
     const strapDrop = contour.underwearStrapDrop != null ? contour.underwearStrapDrop : 1.6*scale;
     const underarmInset = contour.underwearUnderarmInset != null ? contour.underwearUnderarmInset : 1.8*scale;
     const bustBottom = chestY + bustDrop;
-    const colors = palette.upperUnderwear || palette.upperUnder || palette.upper || {};
+    const colors = getUnderwearColors(palette, gender, 'upper');
     const baseColor = colors.base || '#f1d5f7';
-    const highlight = colors.highlight || '#fff5ff';
-    const shadow = colors.shadow || '#d3b1e8';
+    const highlight = colors.highlight || adjustHexColor(baseColor, 0.25);
+    const shadow = colors.shadow || adjustHexColor(baseColor, -0.2);
     ctx.save();
     const grad = ctx.createLinearGradient(centerX, neckBaseY + strapDrop - 1.5*scale, centerX, bustBottom + 1.5*scale);
     grad.addColorStop(0, highlight);
@@ -183,6 +249,66 @@
       ctx.beginPath();
       ctx.moveTo(centerX - sheenOffset, chestY + strapDrop*0.6);
       ctx.quadraticCurveTo(centerX - sheenOffset*0.2, chestY + strapDrop*0.2, centerX - sheenOffset*0.1, bustBottom - 1.5*scale);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function drawUnderwearLower(shared){
+    const {ctx, metrics, palette, scale, equip, gender} = shared;
+    if(!ctx) return;
+    if(equip && equip.lower){
+      return;
+    }
+    const {centerX, hipY} = metrics;
+    if(centerX == null || hipY == null) return;
+    const contour = metrics.torsoContour || {};
+    const torsoWidth = metrics.torsoWidth || 20*scale;
+    const waistY = contour.waistY != null ? contour.waistY : hipY - 5.4*scale;
+    const hipHalf = contour.hipHalf != null ? contour.hipHalf : torsoWidth/2 + 1.8*scale;
+    const rise = contour.underwearRise != null ? contour.underwearRise : 0.8*scale;
+    const legGap = contour.underwearLegGap != null ? contour.underwearLegGap : 3.2*scale;
+    const legCurve = contour.underwearLegCurve != null ? contour.underwearLegCurve : 1.6*scale;
+    const crotchDrop = contour.underwearCrotchDrop != null ? contour.underwearCrotchDrop : 2.6*scale;
+    const legRise = contour.underwearLegRise != null ? contour.underwearLegRise : 0.7*scale;
+    const crotchY = hipY + crotchDrop;
+    const colors = getUnderwearColors(palette, gender, 'lower');
+    const baseColor = colors.base || '#6aa2ff';
+    const highlight = colors.highlight || adjustHexColor(baseColor, 0.25);
+    const shadow = colors.shadow || adjustHexColor(baseColor, -0.2);
+    ctx.save();
+    const grad = ctx.createLinearGradient(centerX, waistY - rise, centerX, crotchY + 1.2*scale);
+    grad.addColorStop(0, highlight);
+    grad.addColorStop(0.65, baseColor);
+    grad.addColorStop(1, shadow);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    const waistInset = Math.max(1.1*scale, hipHalf * 0.18);
+    ctx.moveTo(centerX - hipHalf + waistInset, waistY);
+    ctx.quadraticCurveTo(centerX - hipHalf * 0.25, waistY + rise * 0.3, centerX - (legGap/2 + legCurve), hipY + legRise);
+    ctx.quadraticCurveTo(centerX - legGap/2, crotchY, centerX, crotchY + 0.7*scale);
+    ctx.quadraticCurveTo(centerX + legGap/2, crotchY, centerX + (legGap/2 + legCurve), hipY + legRise);
+    ctx.quadraticCurveTo(centerX + hipHalf * 0.25, waistY + rise * 0.3, centerX + hipHalf - waistInset, waistY);
+    ctx.quadraticCurveTo(centerX, waistY + rise * 0.6, centerX - hipHalf + waistInset, waistY);
+    ctx.closePath();
+    ctx.fill();
+
+    if(colors.trim){
+      const trimWidth = colors.trimWidth != null ? colors.trimWidth : 0.75*scale;
+      ctx.strokeStyle = colors.trim;
+      ctx.lineWidth = Math.max(0.45*scale, trimWidth);
+      ctx.stroke();
+    }
+
+    if(colors.highlight){
+      const seamWidth = Math.max(0.35*scale, colors.highlightWidth != null ? colors.highlightWidth : 0.6*scale);
+      const seamOffset = colors.highlightOffset != null ? colors.highlightOffset : 0.5*scale;
+      ctx.strokeStyle = colors.highlight;
+      ctx.lineWidth = seamWidth;
+      ctx.beginPath();
+      ctx.moveTo(centerX, waistY + rise + seamOffset);
+      ctx.quadraticCurveTo(centerX, crotchY - seamOffset, centerX, crotchY + 0.5*scale);
       ctx.stroke();
     }
 
@@ -581,11 +707,19 @@
     ],
     front: [
       {
+        id: 'lower-underwear',
+        slot: 'lower-underwear',
+        order: 5,
+        placement: 'underHair',
+        condition: ({equip}) => !(equip && equip.lower),
+        draw: drawUnderwearLower
+      },
+      {
         id: 'lower-base',
         slot: 'lower',
         order: 10,
         placement: 'underHair',
-        condition: () => true,
+        condition: ({equip}) => !!(equip && equip.lower),
         draw: drawLowerLayer
       },
       {
@@ -604,7 +738,7 @@
         slot: 'upper',
         order: 20,
         placement: 'underHair',
-        condition: () => true,
+        condition: ({equip}) => !!(equip && equip.upper),
         draw: drawUpperLayer
       },
       {
@@ -650,6 +784,7 @@
       options: opts.options || opts,
       shadeColor: typeof opts.shadeColor === 'function' ? opts.shadeColor : null
     };
+    shared.getUnderwearColors = part => getUnderwearColors(shared.palette, shared.gender, part);
     const layers = normalizeLayers(config, phase);
     const deferred = [];
     layers.forEach(layer => {
@@ -682,6 +817,7 @@
 
   global.AvatarOutfitLayers = Object.assign({}, global.AvatarOutfitLayers, {
     renderEquipmentLayers,
-    DEFAULT_LAYER_CONFIG
+    DEFAULT_LAYER_CONFIG,
+    getUnderwearColors
   });
 })(typeof window !== 'undefined' ? window : this);
