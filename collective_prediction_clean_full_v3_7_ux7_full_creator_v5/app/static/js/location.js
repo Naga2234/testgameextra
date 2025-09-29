@@ -8,6 +8,8 @@ async function api(url, method="GET", body=null){
 const username=(new URL(location.href)).searchParams.get("username")||localStorage.getItem("cp_username")||"Гость";
 let myGender=localStorage.getItem("cp_gender")||"other";
 document.getElementById("u-name").textContent=username;
+const locationNameTag=document.getElementById("location-name");
+if(locationNameTag){ locationNameTag.textContent=username; }
 function updateGenderBadge(value){
   const ico=document.getElementById("u-gender");
   if(!ico) return;
