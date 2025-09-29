@@ -372,6 +372,44 @@ async function persistAppearance(){
 let mePos={name:username,x:520,y:340,equip:{},appearance:Object.assign({}, myAppearance),gender:myGender};
 
 const locationCharacterEl=document.getElementById('location-character');
+const characterStageEl=document.querySelector('.hero-preview .character-stage');
+const stageBounds={minX:0,maxX:0,width:0};
+const MOVE_STEP=24;
+function updateCharacterPosition(){
+  if(!locationCharacterEl || !characterStageEl) return;
+  if(locationCharacterEl.style.position!=='absolute'){
+    locationCharacterEl.style.position='absolute';
+    locationCharacterEl.style.bottom='0';
+  }
+  const stageWidth=characterStageEl.clientWidth||stageBounds.width||0;
+  const charRect=locationCharacterEl.getBoundingClientRect();
+  const charWidth=charRect.width||locationCharacterEl.offsetWidth||0;
+  const maxX=Math.max(0, stageWidth-charWidth);
+  stageBounds.width=stageWidth;
+  stageBounds.maxX=maxX;
+  stageBounds.minX=0;
+  const nextX=Math.min(Math.max(typeof mePos.x==='number'?mePos.x:0, 0), maxX);
+  if(nextX!==mePos.x){
+    mePos.x=nextX;
+  }
+  locationCharacterEl.style.left=`${nextX}px`;
+}
+function recalcStageBounds(){
+  if(!characterStageEl || !locationCharacterEl) return;
+  const stageWidth=characterStageEl.clientWidth||0;
+  const charRect=locationCharacterEl.getBoundingClientRect();
+  const charWidth=charRect.width||locationCharacterEl.offsetWidth||0;
+  stageBounds.width=stageWidth;
+  stageBounds.maxX=Math.max(0, stageWidth-charWidth);
+  stageBounds.minX=0;
+  locationCharacterEl.style.position='absolute';
+  locationCharacterEl.style.bottom='0';
+  updateCharacterPosition();
+}
+if(locationCharacterEl){
+  requestAnimationFrame(recalcStageBounds);
+}
+window.addEventListener('resize', recalcStageBounds);
 const charPreviewCharacterEl=document.getElementById('char-preview-character');
 const locationBubbleEl=document.getElementById('location-bubble');
 
@@ -434,6 +472,7 @@ function renderLocationCharacter(){
   const normalized=applyAppearanceToElement(locationCharacterEl, mePos.appearance, mePos.gender);
   if(normalized){
     mePos.appearance = Object.assign({}, normalized);
+    recalcStageBounds();
   }
 }
 
@@ -497,6 +536,14 @@ function connectWS(){
         renderEmotionPanel();
         renderLocationCharacter();
         drawCharPreview();
+        updateCharacterPosition();
+      }
+    }
+    else if(d.type==="move"){
+      if(d.name===mePos.name){
+        if(typeof d.x==='number') mePos.x=d.x;
+        if(typeof d.y==='number') mePos.y=d.y;
+        updateCharacterPosition();
       }
     }
     else if(d.type==="state" || d.type==="appearance"){
@@ -536,6 +583,31 @@ btn.addEventListener("click", sendChat); input.addEventListener("keypress",(e)=>
 function sendMove(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"move", name:mePos.name, x:mePos.x, y:mePos.y})); }
 function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", name:mePos.name, equip:mePos.equip||{}, appearance: hydrateAppearance(mePos.appearance)})); }
 function sendAppearance(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"appearance", name:mePos.name, appearance:hydrateAppearance(mePos.appearance)})); }
+
+function handleCharacterMovement(ev){
+  if(!locationCharacterEl || !characterStageEl) return;
+  const tag=(ev.target?.tagName||'').toLowerCase();
+  if(tag==='input' || tag==='textarea' || tag==='select' || ev.target?.isContentEditable) return;
+  let delta=0;
+  if(ev.key==='ArrowLeft' || ev.key==='Left' || (typeof ev.key==='string' && ev.key.toLowerCase()==='a')){
+    delta=-MOVE_STEP;
+  }else if(ev.key==='ArrowRight' || ev.key==='Right' || (typeof ev.key==='string' && ev.key.toLowerCase()==='d')){
+    delta=MOVE_STEP;
+  }
+  if(!delta) return;
+  ev.preventDefault();
+  const stageWidth=characterStageEl.clientWidth||stageBounds.width||0;
+  const charRect=locationCharacterEl.getBoundingClientRect();
+  const charWidth=charRect.width||locationCharacterEl.offsetWidth||0;
+  const maxX=Math.max(0, stageWidth-charWidth);
+  const prevX=typeof mePos.x==='number'?mePos.x:0;
+  const nextX=Math.min(Math.max(prevX+delta, 0), maxX);
+  if(nextX===prevX) return;
+  mePos.x=nextX;
+  updateCharacterPosition();
+  sendMove();
+}
+window.addEventListener('keydown', handleCharacterMovement);
 
 // Coins button in modal
 document.addEventListener("click",(e)=>{ if(e.target && e.target.id==="claim") claimCoins(); });
