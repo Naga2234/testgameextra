@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M24 78c0-22 18-40 36-40s36 18 36 40c0 18-18 32-36 32s-36-14-36-32z" fill="var(--hair-base,#2b2b2b)"/>
+  <circle cx="60" cy="34" r="14" fill="var(--hair-base,#2b2b2b)"/>
+  <path d="M32 74c8 12 18 18 28 18s20-6 28-18" fill="none" stroke="var(--hair-highlight,#4a4a4a)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M60 24c-6 4-10 8-12 14" fill="none" stroke="var(--hair-shadow,#1a1a1a)" stroke-width="4" stroke-linecap="round" opacity=".35"/>
+</svg>
