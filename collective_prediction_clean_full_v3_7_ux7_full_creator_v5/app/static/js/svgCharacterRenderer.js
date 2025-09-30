@@ -266,14 +266,22 @@
       if(value != null){ style.setProperty(key, value); }
     };
     set('--skin-base', appearance.skin);
-    set('--skin-highlight', shadeColor(appearance.skin, 0.16));
-    set('--skin-shadow', shadeColor(appearance.skin, -0.22));
+    set('--skin-highlight', shadeColor(appearance.skin, 0.18));
+    set('--skin-shadow', shadeColor(appearance.skin, -0.24));
     set('--hair-base', appearance.hair);
     set('--hair-highlight', shadeColor(appearance.hair, 0.2));
     set('--hair-shadow', shadeColor(appearance.hair, -0.25));
     set('--eye-base', appearance.eyes);
-    set('--eye-highlight', shadeColor(appearance.eyes, 0.25));
+    set('--eye-highlight', shadeColor(appearance.eyes, 0.38));
     set('--eye-white', '#ffffff');
+    set('--eye-shadow', shadeColor(appearance.eyes, -0.28));
+    const browTone = shadeColor(appearance.hair, -0.08);
+    set('--brow-color', browTone);
+    set('--brow-highlight', shadeColor(browTone, 0.32));
+    set('--lid-color', shadeColor(appearance.skin, 0.08));
+    set('--lid-shadow', shadeColor(appearance.skin, -0.22));
+    set('--cheek-blush', 'rgba(255,154,174,0.32)');
+    set('--mouth-soft', 'rgba(255,244,244,0.68)');
     set('--mouth-base', shadeColor(appearance.skin, -0.35));
     set('--shadow-fill', 'rgba(15,23,42,0.18)');
 

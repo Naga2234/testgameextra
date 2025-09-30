@@ -65,7 +65,13 @@
         AvatarDrawing.drawHair(ctx, entry.style, entry.hair, cx, hairlineY, 1, 'back');
         AvatarDrawing.drawHead(ctx, cx, centerY, headRadius, skin);
         AvatarDrawing.drawHair(ctx, entry.style, entry.hair, cx, hairlineY, 1, 'front');
-        AvatarDrawing.drawExpression(ctx, 'smile', cx, centerY, eyes, 1);
+        AvatarDrawing.drawExpression(ctx, 'smile', cx, centerY, {
+          skin,
+          eyes,
+          hair: entry.hair,
+          brows: entry.hair,
+          mouth: '#d45a60'
+        }, 1);
         ctx.save();
         ctx.fillStyle = '#1f2933';
         ctx.textAlign = 'center';
