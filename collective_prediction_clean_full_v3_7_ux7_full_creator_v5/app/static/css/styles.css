@@ -128,9 +128,9 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .character-inner{position:relative;width:160px;height:220px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;z-index:1}
 .character-head{position:relative;width:124px;height:128px;display:flex;align-items:center;justify-content:center}
 .character-face{position:relative;width:112px;height:116px;background:var(--skin);border-radius:58% 56% 50% 52%;box-shadow:inset 0 -8px 0 rgba(0,0,0,.05);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:26px;z-index:2;overflow:visible;isolation:isolate}
-.character-eyebrows{position:absolute;top:30px;left:50%;width:90px;display:flex;justify-content:space-between;gap:10px;transform:translateX(-50%);transition:top .3s ease,transform .3s ease;z-index:4}
+.character-eyebrows{position:absolute;top:24px;left:50%;width:90px;display:flex;justify-content:space-between;gap:10px;transform:translateX(-50%);transition:top .3s ease,transform .3s ease;z-index:4}
 .character-eyebrow{width:32px;height:8px;background:var(--brow-color);border-radius:999px;box-shadow:0 1px 0 var(--brow-highlight) inset;transition:transform .3s ease,top .3s ease,width .3s ease,height .3s ease,opacity .3s ease}
-.character-eyes{position:absolute;top:60px;left:50%;width:100px;display:flex;justify-content:space-between;transform:translateX(-50%);z-index:2;pointer-events:none}
+.character-eyes{position:absolute;top:52px;left:50%;width:100px;display:flex;justify-content:space-between;transform:translateX(-50%);z-index:2;pointer-events:none}
 .character-eye{position:relative;width:32px;height:24px;border-radius:46% 46% 48% 48%;background:var(--eye-white);border:1.8px solid var(--skin-shadow);box-shadow:0 3px 0 rgba(15,23,42,.08) inset,0 2px 6px rgba(15,23,42,.16);overflow:hidden;display:flex;align-items:center;justify-content:center;transition:transform .35s ease,width .35s ease,height .35s ease,border-radius .35s ease,box-shadow .3s ease}
 .eye-iris{position:absolute;top:50%;left:50%;width:62%;height:62%;transform:translate(-50%,-50%) scale(1);border-radius:50%;background:radial-gradient(circle at 28% 28%,rgba(255,255,255,.4) 0 34%,rgba(255,255,255,0) 35%),radial-gradient(circle at 50% 40%,rgba(0,0,0,.18) 0 68%,rgba(0,0,0,.32) 69% 100%),var(--eyes);box-shadow:0 0 0 2px rgba(255,255,255,.35) inset,0 0 8px rgba(15,23,42,.28);transition:transform .35s ease,width .35s ease,height .35s ease}
 .eye-pupil{display:block;position:absolute;top:50%;left:50%;width:48%;height:48%;transform:translate(-50%,-50%) scale(1);border-radius:50%;background:var(--eye-shadow);box-shadow:0 0 0 1px rgba(0,0,0,.35),0 0 8px rgba(0,0,0,.3);transition:transform .35s ease,width .35s ease,height .35s ease}
@@ -139,12 +139,12 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .character-eyelid{width:34px;height:16px;border-radius:48% 48% 38% 38%;background:var(--lid-color);box-shadow:0 2px 0 var(--lid-shadow) inset;opacity:0;transform-origin:center;transition:opacity .35s ease,transform .35s ease,height .35s ease}
 .character-eyelid.upper{transform:translateY(-24px)}
 .character-eyelid.lower{transform:translateY(14px);height:14px;border-radius:40% 40% 58% 58%;box-shadow:0 -1px 0 var(--lid-shadow) inset}
-.character-cheeks{position:absolute;top:92px;left:50%;width:124px;display:flex;justify-content:space-between;transform:translateX(-50%);pointer-events:none;z-index:1}
+.character-cheeks{position:absolute;top:84px;left:50%;width:124px;display:flex;justify-content:space-between;transform:translateX(-50%);pointer-events:none;z-index:1}
 .character-cheek{width:34px;height:18px;border-radius:50%;background:var(--cheek-blush);filter:blur(.4px);opacity:.18;transition:opacity .35s ease,transform .35s ease}
-.character-mouth{position:absolute;left:50%;bottom:32px;width:48px;height:26px;border-radius:28px;background:transparent;border:4px solid var(--mouth-color);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent;transform:translateX(-50%);transition:all .35s ease;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:3}
+.character-mouth{position:absolute;left:50%;bottom:24px;width:48px;height:26px;border-radius:28px;background:transparent;border:4px solid var(--mouth-color);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent;transform:translateX(-50%);transition:all .35s ease;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:3}
 .character-mouth .mouth-inner{position:absolute;inset:48% 10% 2px;border-radius:40px;background:var(--mouth-color);opacity:.08;transition:all .35s ease}
 .character-mouth .mouth-highlight{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:70%;height:36%;border-radius:50%;background:var(--mouth-soft);opacity:0;transition:opacity .35s ease,transform .35s ease}
-.character[data-emotion="neutral"] .character-eyebrows{top:32px}
+.character[data-emotion="neutral"] .character-eyebrows{top:26px}
 .character[data-emotion="neutral"] .character-eye{transform:translateY(0)}
 .character[data-emotion="neutral"] .eye-iris{transform:translate(-50%,-46%) scale(.94)}
 .character[data-emotion="neutral"] .eye-pupil{transform:translate(-50%,-38%) scale(.78)}
@@ -155,30 +155,30 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .character[data-emotion="neutral"] .character-mouth{height:26px;border-bottom-width:5px;border-top-width:2px;border-top-color:rgba(255,255,255,.25);border-bottom-color:var(--mouth-color);border-radius:42px/24px}
 .character[data-emotion="neutral"] .character-mouth .mouth-inner{inset:50% 14% 4px;opacity:.12}
 .character[data-emotion="neutral"] .character-mouth .mouth-highlight{opacity:.35}
-.character[data-emotion="smile"] .character-eyebrows{top:26px}
+.character[data-emotion="smile"] .character-eyebrows{top:22px}
 .character[data-emotion="smile"] .character-eyebrow.left{transform:translateY(-4px) rotate(-10deg)}
 .character[data-emotion="smile"] .character-eyebrow.right{transform:translateY(-4px) rotate(10deg)}
-.character[data-emotion="smile"] .character-eye{height:20px;border-radius:52% 52% 60% 60%;transform:translateY(2px)}
+.character[data-emotion="smile"] .character-eye{height:20px;border-radius:52% 52% 60% 60%;transform:translateY(1px)}
 .character[data-emotion="smile"] .eye-iris{transform:translate(-50%,-46%) scale(.86)}
 .character[data-emotion="smile"] .eye-pupil{transform:translate(-50%,-36%) scale(.68)}
 .character[data-emotion="smile"] .eye-highlight{transform:translate(-26%,-38%) scale(.82)}
 .character[data-emotion="smile"] .character-eyelid.upper{opacity:.92;transform:translateY(-6px)}
 .character[data-emotion="smile"] .character-eyelid.lower{opacity:.45;transform:translateY(4px)}
-.character[data-emotion="smile"] .character-cheek{opacity:.48;transform:translateY(2px) scale(1.08)}
-.character[data-emotion="smile"] .character-mouth{width:54px;height:32px;border-bottom-width:6px;border-top-width:1px;border-top-color:transparent;border-bottom-color:var(--mouth-color);border-radius:999px;transform:translate(-50%,-2px)}
+.character[data-emotion="smile"] .character-cheek{opacity:.48;transform:translateY(1px) scale(1.08)}
+.character[data-emotion="smile"] .character-mouth{width:54px;height:32px;border-bottom-width:6px;border-top-width:1px;border-top-color:transparent;border-bottom-color:var(--mouth-color);border-radius:999px;transform:translate(-50%,-1px)}
 .character[data-emotion="smile"] .character-mouth .mouth-inner{inset:58% 10% 4px;opacity:.18}
 .character[data-emotion="smile"] .character-mouth .mouth-highlight{opacity:.55;transform:translate(-50%,4px) scale(1.05,.9)}
-.character[data-emotion="frown"] .character-eyebrows{top:36px}
+.character[data-emotion="frown"] .character-eyebrows{top:30px}
 .character[data-emotion="frown"] .character-eyebrow.left{transform:translateY(4px) rotate(12deg)}
 .character[data-emotion="frown"] .character-eyebrow.right{transform:translateY(4px) rotate(-12deg)}
-.character[data-emotion="frown"] .character-eye{height:22px;border-radius:48% 48% 46% 46%;transform:translateY(2px)}
+.character[data-emotion="frown"] .character-eye{height:22px;border-radius:48% 48% 46% 46%;transform:translateY(1px)}
 .character[data-emotion="frown"] .eye-iris{transform:translate(-50%,-32%) scale(.82)}
 .character[data-emotion="frown"] .eye-pupil{transform:translate(-50%,-24%) scale(.66)}
 .character[data-emotion="frown"] .eye-highlight{transform:translate(-20%,-6%) scale(.72);opacity:.78}
 .character[data-emotion="frown"] .character-eyelid.upper{opacity:.82;transform:translateY(-4px)}
 .character[data-emotion="frown"] .character-eyelid.lower{opacity:.35;transform:translateY(10px)}
-.character[data-emotion="frown"] .character-cheek{opacity:.2;transform:translateY(4px)}
-.character[data-emotion="frown"] .character-mouth{height:20px;border-top-width:6px;border-bottom-width:0;border-top-color:var(--mouth-color);border-bottom-color:transparent;border-radius:46px/24px;transform:translate(-50%,-6px)}
+.character[data-emotion="frown"] .character-cheek{opacity:.2;transform:translateY(2px)}
+.character[data-emotion="frown"] .character-mouth{height:20px;border-top-width:6px;border-bottom-width:0;border-top-color:var(--mouth-color);border-bottom-color:transparent;border-radius:46px/24px;transform:translate(-50%,-3px)}
 .character[data-emotion="frown"] .character-mouth .mouth-inner{inset:42% 18% 2px;opacity:.16}
 .character[data-emotion="frown"] .character-mouth .mouth-highlight{opacity:.22;transform:translate(-50%,4px) scale(.78)}
 .character[data-emotion="surprised"] .character-eyebrows{top:20px}
@@ -189,23 +189,23 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;backg
 .character[data-emotion="surprised"] .eye-highlight{transform:translate(-28%,-34%) scale(1.05);opacity:.95}
 .character[data-emotion="surprised"] .character-eyelid.upper{opacity:.4;transform:translateY(-18px)}
 .character[data-emotion="surprised"] .character-eyelid.lower{opacity:.3;transform:translateY(14px)}
-.character[data-emotion="surprised"] .character-cheek{opacity:.24;transform:translateY(-2px) scale(1.02)}
+.character[data-emotion="surprised"] .character-cheek{opacity:.24;transform:translateY(-1px) scale(1.02)}
 .character[data-emotion="surprised"] .character-mouth{width:28px;height:30px;border-width:5px;border-color:var(--mouth-color);border-radius:50%;bottom:36px;transform:translate(-50%,0)}
 .character[data-emotion="surprised"] .character-mouth .mouth-inner{inset:10px 6px 6px;opacity:.42;border-radius:50%}
 .character[data-emotion="surprised"] .character-mouth .mouth-highlight{opacity:.6;transform:translate(-50%,6px) scale(.9)}
-.character[data-emotion="sleepy"] .character-eyebrows{top:38px}
+.character[data-emotion="sleepy"] .character-eyebrows{top:32px}
 .character[data-emotion="sleepy"] .character-eyebrow{height:6px;opacity:.7}
-.character[data-emotion="sleepy"] .character-eye{height:16px;border-radius:60% 60% 70% 70%;transform:translateY(4px)}
+.character[data-emotion="sleepy"] .character-eye{height:16px;border-radius:60% 60% 70% 70%;transform:translateY(2px)}
 .character[data-emotion="sleepy"] .eye-iris{transform:translate(-50%,-20%) scale(.7)}
 .character[data-emotion="sleepy"] .eye-pupil{transform:translate(-50%,-12%) scale(.6)}
 .character[data-emotion="sleepy"] .eye-highlight{transform:translate(-12%,-4%) scale(.55);opacity:.55}
 .character[data-emotion="sleepy"] .character-eyelid.upper{opacity:.95;transform:translateY(-4px)}
 .character[data-emotion="sleepy"] .character-eyelid.lower{opacity:.7;transform:translateY(4px)}
-.character[data-emotion="sleepy"] .character-cheek{opacity:.34;transform:translateY(4px) scale(.96)}
-.character[data-emotion="sleepy"] .character-mouth{width:42px;height:14px;border-width:4px 0 0 0;border-top-color:var(--mouth-color);border-bottom-width:0;border-radius:999px;bottom:34px;transform:translate(-50%,4px)}
+.character[data-emotion="sleepy"] .character-cheek{opacity:.34;transform:translateY(2px) scale(.96)}
+.character[data-emotion="sleepy"] .character-mouth{width:42px;height:14px;border-width:4px 0 0 0;border-top-color:var(--mouth-color);border-bottom-width:0;border-radius:999px;bottom:30px;transform:translate(-50%,2px)}
 .character[data-emotion="sleepy"] .character-mouth .mouth-inner{opacity:0}
 .character[data-emotion="sleepy"] .character-mouth .mouth-highlight{opacity:0}
-.character-mouth{position:absolute;left:50%;bottom:28px;width:48px;height:28px;border-radius:28px;background:transparent;border:4px solid var(--mouth-color);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent;transform:translateX(-50%);transition:all .2s ease}
+.character-mouth{position:absolute;left:50%;bottom:24px;width:48px;height:26px;border-radius:28px;background:transparent;border:4px solid var(--mouth-color);border-top-color:transparent;border-left-color:transparent;border-right-color:transparent;transform:translateX(-50%);transition:all .2s ease}
 .character-hair-back,
 .character-hair{position:absolute;left:50%;transform:translateX(-50%);transition:all .25s ease;background:var(--hair);pointer-events:none}
 .character-hair-back{top:var(--hair-back-top,6px);width:var(--hair-back-width,146px);height:var(--hair-back-height,148px);border-radius:var(--hair-back-radius,60% 60% 48% 48%);z-index:0;box-shadow:var(--hair-back-shadow,0 8px 16px rgba(15,23,42,.24));background:var(--hair-back-gradient,linear-gradient(180deg,var(--hair) 0%,rgba(0,0,0,.24) 100%));overflow:hidden}
