@@ -50,18 +50,17 @@
     const deepShadow = adjustColor(color, -68);
     const thicknessMap = {
       short: 3.4,
-      fade: 3.0,
+      fade: 3.1,
       buzz: 2.6,
       undercut: 3.2,
-      mohawk: 3.8,
       curly: 3.2,
-      afro: 3.6,
+      afro: 3.4,
       ponytail: 3.0,
-      pixie: 3.2,
-      bob: 3.4,
+      pixie: 3.1,
+      bob: 3.5,
       long: 3.0,
       bun: 3.2,
-      braids: 3.0
+      braids: 3.1
     };
     const thickness = (thicknessMap[style] || 3.2) * s;
 
@@ -156,6 +155,21 @@
       }
     }
 
+    function drawCurtainFront(widthMul, dropMul, liftMul=0.28, options={}){
+      const width = headRadius * widthMul;
+      const height = headRadius * dropMul;
+      const peakLift = headRadius * liftMul;
+      const left = cx - width / 2;
+      const right = cx + width / 2;
+      const bottom = hairlineY + height;
+      fillHairPath(ctx=>{
+        ctx.moveTo(left, hairlineY);
+        ctx.bezierCurveTo(left + width * 0.12, hairlineY + height * 0.2, cx - width * 0.3, bottom - headRadius * 0.04, cx, bottom);
+        ctx.bezierCurveTo(cx + width * 0.3, bottom - headRadius * 0.04, right - width * 0.12, hairlineY + height * 0.2, right, hairlineY);
+        ctx.quadraticCurveTo(cx, hairlineY - peakLift, left, hairlineY);
+      }, {top: hairlineY - peakLift, bottom, left, right}, Object.assign({highlightAlpha:0.2, highlightShift:0.28, highlightWidth:0.22}, options));
+    }
+
     function drawTail(offsetMul, lengthMul, widthMul, options={}){
       const startY = hairlineY + headRadius * 0.28;
       const length = headRadius * lengthMul;
@@ -223,22 +237,6 @@
       }
     }
 
-    function drawMohawk(widthMul, heightMul){
-      const width = headRadius * widthMul;
-      const topY = hairlineY - headRadius * heightMul;
-      const bottom = hairlineY + headRadius * 0.95;
-      const left = cx - width / 2;
-      const right = cx + width / 2;
-      fillHairPath(ctx=>{
-        ctx.moveTo(left, hairlineY + headRadius * 0.12);
-        ctx.quadraticCurveTo(cx - width * 0.7, hairlineY - headRadius * 0.12, cx - width * 0.3, topY);
-        ctx.quadraticCurveTo(cx, topY - headRadius * 0.08, cx + width * 0.3, topY);
-        ctx.quadraticCurveTo(cx + width * 0.7, hairlineY - headRadius * 0.12, right, hairlineY + headRadius * 0.12);
-        ctx.lineTo(right, bottom);
-        ctx.quadraticCurveTo(cx, bottom + headRadius * 0.1, left, bottom);
-      }, {top: topY - headRadius * 0.08, bottom: bottom + headRadius * 0.1, left: left - width * 0.2, right: right + width * 0.2}, {highlightShift:0.33, highlightWidth:0.2});
-    }
-
     function drawBun(radiusMul, offsetMul){
       const bunRadius = headRadius * radiusMul;
       const centerX = cx + headRadius * offsetMul;
@@ -276,118 +274,99 @@
       }
     }
 
-    switch(style){
-      case 'short':
-        if(shouldRender('back')){
-          drawCap(1.65, 0.58, 0.62, 0.36);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(3, 0.32, 0.28);
-        }
-        break;
-      case 'fade':
-        if(shouldRender('back')){
-          drawCap(1.7, 0.5, 0.58, 0.34);
-        }
-        renderShavedBand(0.48, 2.1, 0.75, -60);
-        if(shouldRender('front')){
-          drawFringeSegments(2, 0.27, 0.22, {highlightAlpha:0.16});
-        }
-        break;
-      case 'buzz':
-        if(shouldRender('back')){
-          drawCap(1.55, 0.38, 0.48, 0.28);
-        }
-        renderShavedBand(0.32, 1.9, 0.7, -54);
-        break;
-      case 'undercut':
-        if(shouldRender('back')){
-          drawCap(1.82, 0.66, 0.6, 0.4);
-        }
-        renderShavedBand(0.6, 2.2, 0.82, -68);
-        if(shouldRender('front')){
-          drawFringeSegments(2, 0.3, 0.3, {highlightAlpha:0.2});
-        }
-        break;
-      case 'mohawk':
-        if(shouldRender('back')){
-          drawMohawk(0.9, 1.15);
-        }
-        renderShavedBand(0.62, 2.4, 0.65, -70);
-        break;
-      case 'curly':
-        if(shouldRender('back')){
-          drawCap(1.75, 0.62, 0.68, 0.42);
-        }
-        if(shouldRender('front')){
+    const STYLE_CONFIG = {
+      short: {
+        back(){ drawCap(1.68, 0.6, 0.64, 0.36); },
+        front(){ drawFringeSegments(4, 0.3, 0.28, {highlightAlpha:0.24, highlightWidth:0.22}); }
+      },
+      pixie: {
+        back(){ drawCap(1.6, 0.52, 0.58, 0.32); },
+        front(){ drawFringeSegments(5, 0.36, 0.42, {highlightShift:0.24, highlightWidth:0.2, highlightAlpha:0.24}); }
+      },
+      bob: {
+        back(){ drawCap(1.96, 1.08, 0.66, 0.56); },
+        front(){ drawCurtainFront(1.88, 0.88, 0.34, {highlightAlpha:0.18, highlightShift:0.3, highlightWidth:0.24}); }
+      },
+      buzz: {
+        band:{height:0.32, width:1.9, alpha:0.7, tint:-54},
+        back(){ drawCap(1.56, 0.4, 0.5, 0.3); },
+        front(){ drawCurtainFront(1.5, 0.26, 0.18, {highlightAlpha:0.14, highlightShift:0.26, highlightWidth:0.18}); }
+      },
+      fade: {
+        band:{height:0.48, width:2.1, alpha:0.75, tint:-60},
+        back(){ drawCap(1.7, 0.5, 0.58, 0.34); },
+        front(){ drawCurtainFront(1.58, 0.3, 0.22, {highlightAlpha:0.18, highlightShift:0.24, highlightWidth:0.18}); }
+      },
+      undercut: {
+        band:{height:0.6, width:2.2, alpha:0.82, tint:-68},
+        back(){ drawCap(1.82, 0.66, 0.6, 0.4); },
+        front(){ drawFringeSegments(3, 0.3, 0.3, {highlightAlpha:0.22}); }
+      },
+      curly: {
+        back(){
+          drawCap(1.78, 0.64, 0.7, 0.44);
+          drawCurlRow(5, 0.16, 0.94, {highlightAlpha:0.18});
+        },
+        front(){
           drawCurlRow(6, 0.18, 0.68);
-          drawCurlRow(5, 0.16, 0.92, {highlightAlpha:0.18});
+          drawCurlRow(5, 0.16, 0.9, {highlightAlpha:0.18});
         }
-        break;
-      case 'afro':
-        if(shouldRender('back')){
-          drawAfro(1.32);
+      },
+      afro: {
+        back(){ drawAfro(1.34); },
+        front(){
+          drawCurlRow(6, 0.2, 0.7, {highlightAlpha:0.22});
+          drawCurlRow(5, 0.18, 0.96, {highlightAlpha:0.16});
         }
-        break;
-      case 'ponytail':
-        if(shouldRender('back')){
-          drawTail(0, 2.05, 0.68, {highlightAlpha:0.18});
-          drawCap(1.68, 0.6, 0.64, 0.36);
+      },
+      ponytail: {
+        back(){
+          drawTail(0, 2.08, 0.7, {highlightAlpha:0.18});
+          drawCap(1.7, 0.6, 0.64, 0.36);
+        },
+        front(){ drawFringeSegments(3, 0.28, 0.24, {highlightAlpha:0.2}); }
+      },
+      long: {
+        back(){
+          drawTail(-0.96, 2.4, 0.54, {highlightAlpha:0.18});
+          drawTail(0.96, 2.4, 0.54, {highlightAlpha:0.18, highlightShift:0.32});
+          drawCap(1.92, 1.18, 0.66, 0.54);
+        },
+        front(){ drawFringeSegments(3, 0.34, 0.28, {highlightAlpha:0.22}); }
+      },
+      bun: {
+        back(){
+          drawCap(1.72, 0.6, 0.62, 0.38);
+          drawBun(0.4, 0);
+        },
+        front(){ drawFringeSegments(3, 0.28, 0.24, {highlightAlpha:0.22}); }
+      },
+      braids: {
+        back(){
+          drawCap(1.82, 0.64, 0.66, 0.44);
+          drawBraidChain(-0.68, 5, 0.18, 0.38);
+          drawBraidChain(0.68, 5, 0.18, 0.38);
+        },
+        front(){
+          drawFringeSegments(3, 0.3, 0.26, {highlightAlpha:0.2});
+          drawBraidChain(-0.22, 4, 0.14, 0.34);
+          drawBraidChain(0.22, 4, 0.14, 0.34);
         }
-        if(shouldRender('front')){
-          drawFringeSegments(2, 0.28, 0.24, {highlightAlpha:0.18});
-        }
-        break;
-      case 'pixie':
-        if(shouldRender('back')){
-          drawCap(1.6, 0.5, 0.56, 0.32);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(4, 0.38, 0.42, {highlightShift:0.28, highlightAlpha:0.24});
-        }
-        break;
-      case 'bob':
-        if(shouldRender('back')){
-          drawCap(1.88, 0.98, 0.62, 0.52);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(4, 0.3, 0.3, {highlightAlpha:0.2});
-        }
-        break;
-      case 'long':
-        if(shouldRender('back')){
-          drawTail(-0.92, 2.4, 0.52, {highlightAlpha:0.18});
-          drawTail(0.92, 2.4, 0.52, {highlightAlpha:0.18, highlightShift:0.32});
-          drawCap(1.9, 1.18, 0.66, 0.52);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(3, 0.34, 0.28, {highlightAlpha:0.2});
-        }
-        break;
-      case 'bun':
-        if(shouldRender('back')){
-          drawCap(1.7, 0.58, 0.62, 0.36);
-          drawBun(0.38, 0);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(2, 0.26, 0.24, {highlightAlpha:0.18});
-        }
-        break;
-      case 'braids':
-        if(shouldRender('back')){
-          drawCap(1.78, 0.62, 0.66, 0.44);
-          drawBraidChain(-0.72, 4, 0.18, 0.42);
-          drawBraidChain(0.72, 4, 0.18, 0.42);
-        }
-        break;
-      default:
-        if(shouldRender('back')){
-          drawCap(1.72, 0.6, 0.64, 0.4);
-        }
-        if(shouldRender('front')){
-          drawFringeSegments(2, 0.28, 0.25, {highlightAlpha:0.18});
-        }
-        break;
+      }
+    };
+
+    const config = STYLE_CONFIG[style] || STYLE_CONFIG.short;
+
+    if(config.band){
+      renderShavedBand(config.band.height, config.band.width, config.band.alpha, config.band.tint);
+    }
+
+    if(shouldRender('back') && typeof config.back === 'function'){
+      config.back();
+    }
+
+    if(shouldRender('front') && typeof config.front === 'function'){
+      config.front();
     }
 
     ctx.restore();

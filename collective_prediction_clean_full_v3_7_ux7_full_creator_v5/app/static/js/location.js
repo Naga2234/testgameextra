@@ -25,7 +25,7 @@ const EMOTIONS = [
   {value:'surprised',label:'Удивлён',icon:'😯'},
   {value:'sleepy',label:'Сонный',icon:'😴'}
 ];
-const HAIR_STYLES=['short','buzz','fade','undercut','mohawk','curly','afro','ponytail','pixie','bob','long','bun','braids'];
+const HAIR_STYLES=['short','buzz','fade','undercut','curly','afro','ponytail','pixie','bob','long','bun','braids'];
 const VALID_HAIR_STYLES=new Set(HAIR_STYLES);
 const VALID_EMOTIONS=new Set(EMOTIONS.map(e=>e.value));
 const SLOT_KEYS=['head','upper','lower','cloak','shoes','accessory'];

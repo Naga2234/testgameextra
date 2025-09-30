@@ -230,10 +230,11 @@ function updateEmotionBadge(){
 }
 
 // Hairstyles catalog by gender
+const BASE_HAIRS=["short","buzz","fade","undercut","curly","afro","ponytail","pixie","bob","long","bun","braids"];
 const STYLES = {
-  male: ["short","fade","buzz","undercut","mohawk","curly","afro","ponytail"],
-  female: ["pixie","bob","long","curly","bun","braids","afro","ponytail"],
-  other: ["short","pixie","bob","long","curly","afro","braids","mohawk","ponytail"]
+  male: [...BASE_HAIRS],
+  female: [...BASE_HAIRS],
+  other: [...BASE_HAIRS]
 };
 
 // State
@@ -399,7 +400,7 @@ if(genderSelect){
 // Preview drawing
 const previewCharacterEl=document.getElementById('preview');
 function hairLabel(style){
-  const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",mohawk:"Ирокез",
+  const map={short:"Короткая",fade:"Фейд",buzz:"Ёжик",undercut:"Андеркат",
              curly:"Кудри",afro:"Афро",ponytail:"Хвост",pixie:"Пикси",bob:"Каре",long:"Длинные",
              bun:"Пучок",braids:"Косы"};
   return map[style]||style;

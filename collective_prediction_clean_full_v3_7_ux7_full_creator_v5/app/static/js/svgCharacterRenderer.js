@@ -324,15 +324,19 @@
   function collectLayers(metadata, appearance, equip, options){
     const layers = Array.isArray(metadata?.layers) ? metadata.layers : [];
     const selected = [];
-    const hairFallback = [];
+    const hairSlots = new Set(['hair','hair-front','hair-back']);
+    const hairFallback = new Map();
     const expressionFallback = [];
 
     layers.forEach(layer=>{
-      if(layer.slot === 'hair'){
-        if(Array.isArray(layer.styles) && layer.styles.includes(appearance.style)){
+      if(hairSlots.has(layer.slot)){
+        const matches = !Array.isArray(layer.styles) || layer.styles.includes(appearance.style);
+        if(matches){
           selected.push(layer);
         }else if(layer.fallback){
-          hairFallback.push(layer);
+          const list = hairFallback.get(layer.slot) || [];
+          list.push(layer);
+          hairFallback.set(layer.slot, list);
         }
         return;
       }
@@ -349,11 +353,23 @@
       }
     });
 
-    if(!selected.some(layer=>layer.slot === 'hair')){
-      const fallbackId = metadata?.defaults?.hair;
-      const fallback = hairFallback[0] || layers.find(layer=>layer.id === fallbackId);
-      if(fallback){ selected.push(fallback); }
-    }
+    hairSlots.forEach(slot=>{
+      if(!selected.some(layer=>layer.slot === slot)){
+        const fallbackId = metadata?.defaults?.[slot] || (slot === 'hair' ? metadata?.defaults?.hair : null);
+        const fallbackList = hairFallback.get(slot) || [];
+        let fallback = fallbackList[0];
+        if(!fallback && fallbackId){
+          fallback = layers.find(layer=>layer.id === fallbackId && (!slot || layer.slot === slot));
+        }
+        if(!fallback && slot !== 'hair'){
+          const legacyId = metadata?.defaults?.hair;
+          if(legacyId){
+            fallback = layers.find(layer=>layer.id === legacyId && layer.slot === slot) || fallback;
+          }
+        }
+        if(fallback){ selected.push(fallback); }
+      }
+    });
 
     if(!selected.some(layer=>layer.slot === 'expression')){
       const fallbackId = metadata?.defaults?.expression;

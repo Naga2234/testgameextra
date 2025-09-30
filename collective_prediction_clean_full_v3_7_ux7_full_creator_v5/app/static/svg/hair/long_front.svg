@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
+  <path d="M22 78c0-22 18-44 38-44s38 22 38 44c0 18-18 34-38 34s-38-16-38-34z" fill="var(--hair-base,#2b2b2b)"/>
+  <path d="M30 74c8 12 18 18 30 18s22-6 30-18" fill="none" stroke="var(--hair-highlight,#4a4a4a)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M26 86c8 10 20 16 34 16s26-6 34-16" fill="none" stroke="var(--hair-shadow,#1a1a1a)" stroke-width="4" stroke-linecap="round" opacity=".3"/>
+</svg>
