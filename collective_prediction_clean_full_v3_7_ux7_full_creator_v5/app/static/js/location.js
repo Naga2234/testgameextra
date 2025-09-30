@@ -405,6 +405,8 @@ function ensureRemotePlayer(name, data){
     clone.removeAttribute('id');
     clone.dataset.remoteName=name;
     clone.classList.add('remote-character');
+    const baseScale=locationCharacterEl.style.getPropertyValue('--scale')||'0.75';
+    clone.style.setProperty('--scale', baseScale);
     const bubble=clone.querySelector('.character-bubble');
     if(bubble) bubble.remove();
     const nameTag=clone.querySelector('.character-name-tag');
@@ -428,6 +430,9 @@ function ensureRemotePlayer(name, data){
   const offsetX=posX-DEFAULT_POSITION_X;
   el.style.setProperty('--translate-x', `${offsetX}px`);
   el.dataset.positionX=String(Math.round(posX));
+  if(typeof mergedData.scale==='number' && Number.isFinite(mergedData.scale)){
+    el.style.setProperty('--scale', String(mergedData.scale));
+  }
   if(typeof mergedData.y==='number'){
     el.dataset.positionY=String(Math.round(mergedData.y));
   }
