@@ -616,6 +616,26 @@ function normalizeHexColor(value, fallback){
   }
   return `#${raw.toLowerCase()}`;
 }
+function shadeColor(hex, amount){
+  const normalized=normalizeHexColor(hex);
+  if(!normalized||!Number.isFinite(amount)) return normalized||hex;
+  const raw=normalized.slice(1);
+  const clamp=v=>Math.max(0,Math.min(255,v));
+  let r=parseInt(raw.slice(0,2),16);
+  let g=parseInt(raw.slice(2,4),16);
+  let b=parseInt(raw.slice(4,6),16);
+  const apply=channel=>{
+    if(amount>=0){
+      return clamp(Math.round(channel+(255-channel)*amount));
+    }
+    return clamp(Math.round(channel+channel*amount));
+  };
+  r=apply(r);
+  g=apply(g);
+  b=apply(b);
+  const toHex=v=>v.toString(16).padStart(2,'0');
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
 function applyAppearanceToElement(el, appearance, gender){
   if(!el) return null;
   const normalized=hydrateAppearance(appearance);
@@ -629,6 +649,19 @@ function applyAppearanceToElement(el, appearance, gender){
   el.style.setProperty('--skin', normalized.skin);
   el.style.setProperty('--hair', normalized.hair);
   el.style.setProperty('--eyes', normalized.eyes);
+  const setVar=(name,value)=>{ if(value){ el.style.setProperty(name,value); } };
+  setVar('--skin-highlight', shadeColor(normalized.skin, 0.18));
+  setVar('--skin-shadow', shadeColor(normalized.skin, -0.24));
+  setVar('--lid-color', shadeColor(normalized.skin, 0.08));
+  setVar('--lid-shadow', shadeColor(normalized.skin, -0.22));
+  const browTone=shadeColor(normalized.hair, -0.08);
+  setVar('--brow-color', browTone);
+  setVar('--brow-highlight', shadeColor(browTone, 0.32));
+  setVar('--eye-white', '#ffffff');
+  setVar('--eye-highlight', shadeColor(normalized.eyes, 0.38));
+  setVar('--eye-shadow', shadeColor(normalized.eyes, -0.28));
+  setVar('--cheek-blush', 'rgba(255,154,174,0.32)');
+  setVar('--mouth-soft', 'rgba(255,244,244,0.68)');
   const underwearColor = genderClass==='female' ? '#f472b6' : genderClass==='other' ? '#7c3aed' : '#6aa2ff';
   const mouthColor = genderClass==='female' ? '#e76d7c' : genderClass==='other' ? '#f59e0b' : '#d45a60';
   el.style.setProperty('--underwear', underwearColor);

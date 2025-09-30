@@ -1,3 +1,36 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140">
-  <path d="M50 46c4 6 16 6 20 0" fill="none" stroke="var(--mouth-base,#8c3f3f)" stroke-width="2.6" stroke-linecap="round" />
+  <g class="blush" fill="var(--cheek-blush,rgba(255,154,174,0.32))" opacity=".45">
+    <ellipse cx="38" cy="82" rx="10" ry="5.6" />
+    <ellipse cx="82" cy="82" rx="10" ry="5.6" />
+  </g>
+  <g class="brows" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 36c6-9 20-9 28-1.2" stroke="var(--brow-color,#1f2937)" stroke-width="4.4" />
+    <path d="M60 34.8c6-7.8 20-7.8 28-1" stroke="var(--brow-color,#1f2937)" stroke-width="4.4" />
+    <path d="M35.4 37.2c5.2-6.4 16.8-6.4 23.6-.8" stroke="var(--brow-highlight,rgba(255,255,255,0.2))" stroke-width="1.6" opacity=".6" />
+    <path d="M63.4 36.4c5.2-5.6 16.4-5.6 23.2-.6" stroke="var(--brow-highlight,rgba(255,255,255,0.2))" stroke-width="1.6" opacity=".6" />
+  </g>
+  <g class="eyes">
+    <g class="eye-left">
+      <ellipse cx="46" cy="46" rx="9.4" ry="6.9" fill="var(--eye-white,#fff)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.4" />
+      <ellipse cx="46" cy="44.6" rx="4.6" ry="3.6" fill="var(--eye-base,#274472)" />
+      <ellipse cx="46.2" cy="44.6" rx="2.3" ry="2.3" fill="var(--eye-shadow,#13294b)" />
+      <circle cx="44.2" cy="43.3" r="1.2" fill="var(--eye-highlight,#f5f9ff)" />
+      <path d="M37 45.2c5-6.8 16.4-6.8 20 0l-1.6 1.8c-4.4-4.2-12.4-4.2-16.8 0z" fill="var(--lid-color,rgba(255,255,255,0.2))" stroke="var(--lid-shadow,rgba(0,0,0,0.18))" stroke-width=".8" opacity=".86" />
+      <path d="M38.2 49.6c4.4 3.6 11.4 3.6 15.8 0l1.6 1.6c-4.6 4.8-14.4 4.8-18.8 0z" fill="var(--lid-color,rgba(255,255,255,0.2))" opacity=".42" />
+      <path d="M39 50.8q6.9 3.3 14 0" fill="none" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1" opacity=".32" />
+    </g>
+    <g class="eye-right">
+      <ellipse cx="74" cy="46" rx="9.4" ry="6.9" fill="var(--eye-white,#fff)" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1.4" />
+      <ellipse cx="74" cy="44.6" rx="4.6" ry="3.6" fill="var(--eye-base,#274472)" />
+      <ellipse cx="73.8" cy="44.6" rx="2.3" ry="2.3" fill="var(--eye-shadow,#13294b)" />
+      <circle cx="71.8" cy="43.3" r="1.2" fill="var(--eye-highlight,#f5f9ff)" />
+      <path d="M65 45.2c5-6.8 16.4-6.8 20 0l-1.6 1.8c-4.4-4.2-12.4-4.2-16.8 0z" fill="var(--lid-color,rgba(255,255,255,0.2))" stroke="var(--lid-shadow,rgba(0,0,0,0.18))" stroke-width=".8" opacity=".86" />
+      <path d="M66.2 49.6c4.4 3.6 11.4 3.6 15.8 0l1.6 1.6c-4.6 4.8-14.4 4.8-18.8 0z" fill="var(--lid-color,rgba(255,255,255,0.2))" opacity=".42" />
+      <path d="M67 50.8q6.9 3.3 14 0" fill="none" stroke="var(--skin-shadow,#d19a6c)" stroke-width="1" opacity=".32" />
+    </g>
+  </g>
+  <g class="mouth" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M44 80c8 12 24 12 32 0" stroke="var(--mouth-color,#d45a60)" stroke-width="4.2" />
+    <path d="M49.8 83.6c6 5.2 14.4 5.2 20.4 0" stroke="var(--mouth-soft,rgba(255,244,244,0.65))" stroke-width="2.2" opacity=".6" />
+  </g>
 </svg>

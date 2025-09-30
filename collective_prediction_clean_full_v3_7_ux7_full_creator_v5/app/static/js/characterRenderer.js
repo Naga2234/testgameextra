@@ -1133,6 +1133,7 @@
       drawHair(ctx, appearance.style, appearance.hair, layout.headCx, layout.hairTop, layout.faceScale, 'back');
       ctx.restore();
       drawHead(ctx, layout.headCx, layout.headCy, layout.headRadius, appearance.skin);
+      drawExpression(ctx, appearance.emotion, layout.headCx, layout.headCy, buildFacePalette(appearance, genderKey), layout.faceScale);
 
       let deferredFrontLayers = null;
       if(renderEquipmentLayers){
@@ -1151,7 +1152,6 @@
       if(deferredFrontLayers && Array.isArray(deferredFrontLayers.deferred)){
         deferredFrontLayers.deferred.forEach(fn=>{ if(typeof fn === 'function'){ fn(); } });
       }
-      drawExpression(ctx, appearance.emotion, layout.headCx, layout.headCy, appearance.eyes, layout.faceScale);
 
       if(equip.head){
         ctx.fillStyle="#e94560";
@@ -1300,6 +1300,35 @@
     b=apply(b);
     const toHex=v=>v.toString(16).padStart(2,'0');
     return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+
+  function getMouthColor(gender){
+    if(gender==='female') return '#e76d7c';
+    if(gender==='other') return '#f59e0b';
+    return '#d45a60';
+  }
+
+  function buildFacePalette(appearance, gender){
+    const skin = appearance.skin || DEFAULT_APPEARANCE.skin;
+    const hair = appearance.hair || DEFAULT_APPEARANCE.hair;
+    const eyes = appearance.eyes || DEFAULT_APPEARANCE.eyes;
+    const browTone = shadeColor(hair, -0.08);
+    return {
+      skin,
+      skinShadow: shadeColor(skin, -0.24),
+      skinHighlight: shadeColor(skin, 0.18),
+      lids: shadeColor(skin, 0.08),
+      lidShadow: shadeColor(skin, -0.22),
+      brows: browTone,
+      browHighlight: shadeColor(browTone, 0.32),
+      eyes,
+      eyeHighlight: shadeColor(eyes, 0.38),
+      eyeShadow: shadeColor(eyes, -0.28),
+      sclera: '#ffffff',
+      hair,
+      mouth: getMouthColor(gender),
+      blush: 'rgba(255,154,174,0.32)'
+    };
   }
 
   function drawShadow(ctx, x, baselineY, scale){
@@ -1480,46 +1509,46 @@
       }
     };
 
-    if(renderEquipmentLayers){
-      renderEquipmentLayers(ctx, metrics, equip, appearance, {
-        phase: 'back',
-        palette,
+  if(renderEquipmentLayers){
+    renderEquipmentLayers(ctx, metrics, equip, appearance, {
+      phase: 'back',
+      palette,
+      scale,
+      gender: genderKey,
+      shadeColor,
+      options: opts
+    });
+  }
+  ctx.save();
+  drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'back');
+  ctx.restore();
+  drawHead(ctx, headCx, headCy, headRadius, appearance.skin);
+  drawExpression(ctx, appearance.emotion, headCx, headCy, buildFacePalette(appearance, genderKey), faceScale);
+  let deferredFrontLayers = null;
+  if(renderEquipmentLayers){
+    deferredFrontLayers = renderEquipmentLayers(ctx, metrics, equip, appearance, {
+      phase: 'front',
+      palette,
         scale,
         gender: genderKey,
         shadeColor,
         options: opts
       });
-    }
-    ctx.save();
-    drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'back');
-    ctx.restore();
-    drawHead(ctx, headCx, headCy, headRadius, appearance.skin);
-    let deferredFrontLayers = null;
-    if(renderEquipmentLayers){
-      deferredFrontLayers = renderEquipmentLayers(ctx, metrics, equip, appearance, {
-        phase: 'front',
-        palette,
-        scale,
-        gender: genderKey,
-        shadeColor,
-        options: opts
-      });
-    }
-    ctx.save();
-    drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'front');
-    ctx.restore();
-    if(deferredFrontLayers && Array.isArray(deferredFrontLayers.deferred)){
-      deferredFrontLayers.deferred.forEach(fn=>{
-        if(typeof fn === 'function'){
-          fn();
-        }
-      });
-    }
-    drawExpression(ctx, appearance.emotion, headCx, headCy, appearance.eyes, faceScale);
+  }
+  ctx.save();
+  drawHair(ctx, appearance.style, appearance.hair, headCx, hairTop, faceScale, 'front');
+  ctx.restore();
+  if(deferredFrontLayers && Array.isArray(deferredFrontLayers.deferred)){
+    deferredFrontLayers.deferred.forEach(fn=>{
+      if(typeof fn === 'function'){
+        fn();
+      }
+    });
+  }
 
-    if(equip.head){
-      ctx.fillStyle="#e94560";
-      const hatTop = headTop - 3*scale;
+  if(equip.head){
+    ctx.fillStyle="#e94560";
+    const hatTop = headTop - 3*scale;
       ctx.fillRect(headCx - headRadius, hatTop, headRadius * 2, 4*scale);
     }
 
