@@ -323,32 +323,35 @@ async def ws_endpoint(ws: WebSocket):
                     ]
                 })
                 await broadcast({"type":"system","text":f"{username} подключился"})
-            elif t == "chat":
-                await broadcast({"type":"chat","name":data["name"],"msg":data["msg"]})
+                continue
+
+            if username is None:
+                await ws.send_json({"type": "error", "error": "presence_required"})
+                continue
+
+            if t == "chat":
+                await broadcast({"type":"chat","name":username,"msg":data["msg"]})
             elif t == "move":
-                nm = data["name"]
-                STATE["positions"][nm] = {"x": int(data.get("x",520)), "y": int(data.get("y",340))}
-                await broadcast({"type":"move","name":nm,"x":STATE["positions"][nm]["x"],"y":STATE["positions"][nm]["y"]})
+                STATE["positions"][username] = {"x": int(data.get("x",520)), "y": int(data.get("y",340))}
+                await broadcast({"type":"move","name":username,"x":STATE["positions"][username]["x"],"y":STATE["positions"][username]["y"]})
             elif t == "state":
-                nm = data["name"]
                 # persist appearance if provided
                 if "appearance" in data:
-                    STATE["users"].setdefault(nm,{}).setdefault("appearance",{}).update(data.get("appearance",{}))
+                    STATE["users"].setdefault(username,{}).setdefault("appearance",{}).update(data.get("appearance",{}))
                 await broadcast({
                     "type":"state",
-                    "name":nm,
+                    "name":username,
                     "equip":data.get("equip",{}),
-                    "appearance":STATE["users"].get(nm,{}).get("appearance",{}),
-                    "gender": STATE["users"].get(nm, {}).get("gender", "other")
+                    "appearance":STATE["users"].get(username,{}).get("appearance",{}),
+                    "gender": STATE["users"].get(username, {}).get("gender", "other")
                 })
             elif t == "appearance":
-                nm = data["name"]
-                STATE["users"][nm]["appearance"] = data.get("appearance", STATE["users"][nm].get("appearance"))
+                STATE["users"][username]["appearance"] = data.get("appearance", STATE["users"][username].get("appearance"))
                 await broadcast({
                     "type":"appearance",
-                    "name":nm,
-                    "appearance":STATE["users"][nm]["appearance"],
-                    "gender": STATE["users"].get(nm, {}).get("gender", "other")
+                    "name":username,
+                    "appearance":STATE["users"][username]["appearance"],
+                    "gender": STATE["users"].get(username, {}).get("gender", "other")
                 })
     except WebSocketDisconnect:
         pass
