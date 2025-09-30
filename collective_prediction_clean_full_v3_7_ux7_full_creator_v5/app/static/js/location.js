@@ -815,9 +815,9 @@ function sendLeave(){ try{ if(ws?.readyState===1) ws.send(JSON.stringify({type:"
 window.addEventListener("beforeunload", sendLeave);
 function sendChat(){ const t=(input.value||"").trim(); if(!t) return; if(ws?.readyState!==1){ sys("нет соединения"); return; } ws.send(JSON.stringify({type:"chat", name:mePos.name, msg:t})); showSpeechBubble(mePos.name, t); input.value=""; }
 btn.addEventListener("click", sendChat); input.addEventListener("keypress",(e)=>{ if(e.key==="Enter") sendChat(); });
-function sendMove(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"move", name:mePos.name, x:mePos.x, y:mePos.y})); }
-function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", name:mePos.name, equip:mePos.equip||{}, appearance: hydrateAppearance(mePos.appearance)})); }
-function sendAppearance(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"appearance", name:mePos.name, appearance:hydrateAppearance(mePos.appearance)})); }
+function sendMove(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"move", x:mePos.x, y:mePos.y})); }
+function sendState(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"state", equip:mePos.equip||{}, appearance: hydrateAppearance(mePos.appearance)})); }
+function sendAppearance(){ if(ws?.readyState===1) ws.send(JSON.stringify({type:"appearance", appearance:hydrateAppearance(mePos.appearance)})); }
 
 // Coins button in modal
 document.addEventListener("click",(e)=>{ if(e.target && e.target.id==="claim") claimCoins(); });
